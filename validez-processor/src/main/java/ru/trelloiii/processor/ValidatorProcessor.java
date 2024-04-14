@@ -4,7 +4,6 @@ import com.google.auto.service.AutoService;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 import ru.trelloiii.lib.api.Validators;
-import ru.trelloiii.processor.config.ConfigHolder;
 import ru.trelloiii.processor.config.ConfigProvider;
 import ru.trelloiii.processor.generator.ValidatorGenerator;
 import ru.trelloiii.processor.generator.ValidatorsFillerGenerator;
@@ -15,8 +14,9 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 @SupportedAnnotationTypes("ru.trelloiii.lib.annotation.Validate")
 @SupportedSourceVersion(SourceVersion.RELEASE_8)

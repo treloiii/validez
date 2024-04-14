@@ -2,7 +2,6 @@ package validez.examples.dto;
 
 import org.junit.jupiter.api.Test;
 import ru.trelloiii.lib.api.Validators;
-import ru.trelloiii.lib.exceptions.InvalidException;
 import validez.examples.exceptions.CustomNotValidException;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;

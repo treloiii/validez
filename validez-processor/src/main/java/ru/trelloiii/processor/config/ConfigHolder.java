@@ -1,8 +1,5 @@
 package ru.trelloiii.processor.config;
 
-import lombok.RequiredArgsConstructor;
-
-import javax.annotation.Nullable;
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Element;
 import javax.tools.FileObject;
