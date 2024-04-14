@@ -1,8 +1,12 @@
 package validez.examples.dto;
 
 import lombok.Data;
-import ru.trelloiii.lib.annotation.Validate;
-import ru.trelloiii.lib.annotation.validators.*;
+import validez.lib.annotation.Validate;
+import validez.lib.annotation.validators.Length;
+import validez.lib.annotation.validators.IntRange;
+import validez.lib.annotation.validators.LongRange;
+import validez.lib.annotation.validators.NotEmpty;
+import validez.lib.annotation.validators.StringRange;
 
 import java.util.List;
 import java.util.Set;

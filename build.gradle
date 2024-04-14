@@ -1,4 +1,4 @@
-group = 'ru.trelloiii'
+group = 'validez'
 
 configure (subprojects) {
     version = '0.0.1'

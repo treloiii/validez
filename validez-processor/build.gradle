@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
 }
 
-group = 'ru.trelloiii'
+group = 'validez'
 
 jar {
     from sourceSets.main.output
