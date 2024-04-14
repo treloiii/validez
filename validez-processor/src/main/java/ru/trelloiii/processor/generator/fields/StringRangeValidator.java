@@ -17,6 +17,10 @@ public class StringRangeValidator implements FieldValidator<StringRange> {
     public CodeBlock build(StringRange annotation, VariableElement field, String delegateName) {
         String[] range = annotation.value();
         Name fieldName = field.getSimpleName();
+        String message = "\"" + annotation.message() + "\"";
+        if (annotation.format()) {
+            message = CodeBlock.of(message, fieldName).toString();
+        }
         List<String> rangeValues = new ArrayList<>(range.length);
         for (String rangeValue : range) {
             rangeValues.add( "\"" + rangeValue + "\"");
@@ -25,7 +29,7 @@ public class StringRangeValidator implements FieldValidator<StringRange> {
         ClassName definedValidator = ClassName.get(InRangeDefinedValidator.class);
         return CodeBlock.builder()
                 .beginControlFlow("if (!$T.validateString($N, new String[]{$L}))", definedValidator, fieldName, rangeLiteral)
-                .addStatement("throw new $T()", ConfigProvider.getExceptionClass())
+                .addStatement("throw new $T($L)", ConfigProvider.getExceptionClass(), message)
                 .endControlFlow()
                 .build();
     }

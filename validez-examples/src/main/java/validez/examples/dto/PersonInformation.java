@@ -18,12 +18,15 @@ public class PersonInformation {
     @Length(equals = 16)
     private String inn;
     @NotEmpty
+    @Length(min = 18, max = 64)
     private Integer age;
-    @NotEmpty
+    @Length(min = 1982, max = 2016)
+    private int born;
+    @NotEmpty(message = "$N null or empty")
     private List<PersonInformation> children;
     @NotEmpty
     private Set<String> addressLines;
-    @NotEmpty
+    @NotEmpty(message = "pseudonym is empty", format = false)
     @Length(min = 3)
     private String pseudonym;
     @StringRange(value = {"ST1", "ST2"})

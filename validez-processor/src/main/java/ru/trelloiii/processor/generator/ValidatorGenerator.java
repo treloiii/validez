@@ -27,7 +27,7 @@ public class ValidatorGenerator {
     public ValidatorGenerator(ProcessingEnvironment processingEnvironment) {
         this.processingEnv = processingEnvironment;
         basicValidators = Map.of(
-                Length.class, new LengthValidator(),
+                Length.class, new LengthValidator(processingEnvironment),
                 NotEmpty.class, new NotEmptyValidator(processingEnvironment),
                 StringRange.class, new StringRangeValidator(),
                 LongRange.class, new LongRangeValidator(),

@@ -17,6 +17,10 @@ public class LongRangeValidator implements FieldValidator<LongRange> {
     public CodeBlock build(LongRange annotation, VariableElement field, String delegateName) {
         long[] range = annotation.value();
         Name fieldName = field.getSimpleName();
+        String message = "\"" + annotation.message() + "\"";
+        if (annotation.format()) {
+            message = CodeBlock.of(message, fieldName).toString();
+        }
         List<String> rangeValues = new ArrayList<>(range.length);
         for (long rangeValue : range) {
             rangeValues.add(String.valueOf(rangeValue));
@@ -25,7 +29,7 @@ public class LongRangeValidator implements FieldValidator<LongRange> {
         ClassName definedValidator = ClassName.get(InRangeDefinedValidator.class);
         return CodeBlock.builder()
                 .beginControlFlow("if (!$T.validateLong($N, new long[]{$L}))", definedValidator, fieldName, rangeLiteral)
-                .addStatement("throw new $T()", ConfigProvider.getExceptionClass())
+                .addStatement("throw new $T($L)", ConfigProvider.getExceptionClass(), message)
                 .endControlFlow()
                 .build();
     }

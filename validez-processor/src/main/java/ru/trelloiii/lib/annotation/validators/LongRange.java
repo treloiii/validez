@@ -6,4 +6,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface LongRange {
     long[] value();
+
+    String message() default "$N not in range";
+
+    boolean format() default true;
 }
