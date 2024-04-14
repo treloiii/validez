@@ -1,0 +1,5 @@
+group = 'ru.trelloiii'
+
+configure (subprojects) {
+    version = '0.0.1'
+}

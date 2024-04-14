@@ -1,0 +1,33 @@
+package ru.trelloiii.processor.generator.fields;
+
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import ru.trelloiii.lib.annotation.validators.LongRange;
+import ru.trelloiii.lib.api.defined.InRangeDefinedValidator;
+import ru.trelloiii.processor.config.ConfigProvider;
+
+import javax.lang.model.element.Name;
+import javax.lang.model.element.VariableElement;
+import java.util.ArrayList;
+import java.util.List;
+
+public class LongRangeValidator implements FieldValidator<LongRange> {
+
+    @Override
+    public CodeBlock build(LongRange annotation, VariableElement field, String delegateName) {
+        long[] range = annotation.value();
+        Name fieldName = field.getSimpleName();
+        List<String> rangeValues = new ArrayList<>(range.length);
+        for (long rangeValue : range) {
+            rangeValues.add(String.valueOf(rangeValue));
+        }
+        String rangeLiteral = String.join(",", rangeValues);
+        ClassName definedValidator = ClassName.get(InRangeDefinedValidator.class);
+        return CodeBlock.builder()
+                .beginControlFlow("if (!$T.validateLong($N, new long[]{$L}))", definedValidator, fieldName, rangeLiteral)
+                .addStatement("throw new $T()", ConfigProvider.getExceptionClass())
+                .endControlFlow()
+                .build();
+    }
+
+}
