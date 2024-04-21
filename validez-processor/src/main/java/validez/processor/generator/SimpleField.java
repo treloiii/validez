@@ -30,7 +30,7 @@ public class SimpleField extends ValidField {
         for (Map.Entry<Annotation, FieldValidator<Annotation>> entry : fieldValidators.entrySet()) {
             Annotation annotation = entry.getKey();
             FieldValidator<Annotation> validator = entry.getValue();
-            CodeBlock validatorCode = validator.build(annotation, field, args.getDelegateName());
+            CodeBlock validatorCode = validator.build(annotation, field, args);
             codeBlockBuilder.add(validatorCode);
         }
         codeBlockBuilder.endControlFlow();

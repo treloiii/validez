@@ -5,6 +5,7 @@ import com.squareup.javapoet.CodeBlock;
 import lombok.RequiredArgsConstructor;
 import validez.lib.annotation.validators.NotEmpty;
 import validez.processor.config.ConfigProvider;
+import validez.processor.generator.ValidatorArgs;
 import validez.processor.utils.ProcessorUtils;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -18,7 +19,7 @@ public class NotEmptyValidator implements FieldValidator<NotEmpty> {
     private final ProcessingEnvironment processingEnvironment;
 
     @Override
-    public CodeBlock build(NotEmpty annotation, VariableElement field, String delegateName) {
+    public CodeBlock build(NotEmpty annotation, VariableElement field, ValidatorArgs args) {
         Name fieldName = field.getSimpleName();
         CodeBlock.Builder notEmptyBuilder = CodeBlock.builder();
         String message =  "\"" + annotation.message() + "\"";

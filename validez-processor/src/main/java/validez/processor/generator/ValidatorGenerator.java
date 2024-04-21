@@ -4,7 +4,10 @@ import com.squareup.javapoet.*;
 import validez.lib.annotation.Validate;
 import validez.lib.annotation.Validator;
 import validez.lib.annotation.conditions.Exclude;
+import validez.lib.annotation.messaging.ModifyMessage;
 import validez.lib.annotation.validators.*;
+import validez.lib.api.messaging.DefaultMessageHandler;
+import validez.lib.api.messaging.MessageHandler;
 import validez.processor.config.ConfigProvider;
 import validez.processor.generator.fields.*;
 import validez.processor.utils.ProcessorUtils;
@@ -20,6 +23,7 @@ import java.util.*;
 
 import static validez.processor.generator.ValidatorArgs.VALIDATE_ARGS;
 import static validez.processor.utils.ProcessorUtils.elementContainsAtLeastOneOfAnnotations;
+import static validez.processor.utils.ProcessorUtils.getAnnotationValue;
 
 public class ValidatorGenerator {
 
@@ -67,7 +71,20 @@ public class ValidatorGenerator {
                 exceptionType
         );
         MethodSpec.Builder methodBuilder = MethodSpec.overriding(validateSuperMethod,
-                interfaceWithGeneric, processingEnv.getTypeUtils());
+                interfaceWithGeneric, typeUtils);
+        String handlerClass = getAnnotationValue("messageHandler", ModifyMessage.class,
+                validateClass, elementUtils);
+        ClassName handlerClassName;
+        if (handlerClass != null) {
+            handlerClass = handlerClass.substring(0, handlerClass.length() - ".class".length());
+            handlerClassName = ClassName.bestGuess(handlerClass);
+        } else {
+            handlerClassName = ClassName.get(DefaultMessageHandler.class);
+        }
+        CodeBlock handlerInitCode = CodeBlock.builder()
+                .addStatement("$T messageHandler_ = new $T()", handlerClassName, handlerClassName)
+                .build();
+        methodBuilder.addCode(handlerInitCode);
         for (ValidField validField : validFields) {
             methodBuilder.addCode(validField.createCode(VALIDATE_ARGS));
         }

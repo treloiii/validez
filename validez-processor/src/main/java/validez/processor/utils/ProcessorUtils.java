@@ -1,10 +1,8 @@
 package validez.processor.utils;
 
+import javax.annotation.Nullable;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -13,6 +11,7 @@ import javax.lang.model.util.Types;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class ProcessorUtils {
@@ -64,6 +63,27 @@ public class ProcessorUtils {
         TypeElement superElement = elementUtils.getTypeElement(superClass.getCanonicalName());
         TypeMirror superType = typeUtils.erasure(superElement.asType());
         return typeUtils.isSubtype(fieldType, superType);
+    }
+
+    @Nullable
+    public static String getAnnotationValue(String name, Class<? extends Annotation> annotation,
+                                            Element element, Elements elementUtils) {
+        List<? extends AnnotationMirror> annotationMirrors = element.getAnnotationMirrors();
+        for (AnnotationMirror annotationMirror : annotationMirrors) {
+            String annotationType = annotationMirror.getAnnotationType().toString();
+            if (annotationType.equals(annotation.getCanonicalName())) {
+                Map<? extends ExecutableElement, ? extends AnnotationValue> values = elementUtils.getElementValuesWithDefaults(annotationMirror);
+                for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : values.entrySet()) {
+                    ExecutableElement propElement = entry.getKey();
+                    String propName = propElement.getSimpleName().toString();
+                    if (propName.equals(name)) {
+                        AnnotationValue annotationValue = entry.getValue();
+                        return annotationValue.toString();
+                    }
+                }
+            }
+        }
+        return null;
     }
 
 }

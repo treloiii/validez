@@ -7,8 +7,4 @@ import java.lang.annotation.Target;
 public @interface IntRange {
     int[] value();
 
-    String message() default "$N not in range";
-
-    boolean format() default true;
-
 }

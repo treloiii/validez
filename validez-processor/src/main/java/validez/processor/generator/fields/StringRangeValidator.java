@@ -5,6 +5,7 @@ import com.squareup.javapoet.CodeBlock;
 import validez.lib.annotation.validators.StringRange;
 import validez.lib.api.defined.InRangeDefinedValidator;
 import validez.processor.config.ConfigProvider;
+import validez.processor.generator.ValidatorArgs;
 
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
@@ -14,7 +15,7 @@ import java.util.List;
 public class StringRangeValidator implements FieldValidator<StringRange> {
 
     @Override
-    public CodeBlock build(StringRange annotation, VariableElement field, String delegateName) {
+    public CodeBlock build(StringRange annotation, VariableElement field, ValidatorArgs args) {
         String[] range = annotation.value();
         Name fieldName = field.getSimpleName();
         String message = "\"" + annotation.message() + "\"";

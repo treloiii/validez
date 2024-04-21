@@ -1,9 +1,11 @@
 package validez.examples.dto;
 
 import lombok.Data;
+import validez.examples.handler.CustomMessageHandler;
 import validez.lib.annotation.Validate;
 import validez.lib.annotation.conditions.Exclude;
 import validez.lib.annotation.conditions.Partial;
+import validez.lib.annotation.messaging.ModifyMessage;
 import validez.lib.annotation.validators.*;
 
 import java.util.List;
