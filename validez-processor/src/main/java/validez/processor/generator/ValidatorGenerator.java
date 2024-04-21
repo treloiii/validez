@@ -1,26 +1,25 @@
 package validez.processor.generator;
 
 import com.squareup.javapoet.*;
+import validez.lib.annotation.Validate;
 import validez.lib.annotation.Validator;
+import validez.lib.annotation.conditions.Exclude;
 import validez.lib.annotation.validators.*;
 import validez.processor.config.ConfigProvider;
 import validez.processor.generator.fields.*;
 import validez.processor.utils.ProcessorUtils;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static validez.processor.generator.ValidatorArgs.VALIDATE_ARGS;
+import static validez.processor.utils.ProcessorUtils.elementContainsAtLeastOneOfAnnotations;
 
 public class ValidatorGenerator {
 
@@ -42,7 +41,6 @@ public class ValidatorGenerator {
         List<VariableElement> fields = ProcessorUtils.getFields(validateClass);
         List<ValidField> validFields = filterValidatedFields(fields);
         String validatorName = validateClass.getSimpleName().toString() + "ValidatorImpl";
-        String delegateName = "arg0";
         return TypeSpec.classBuilder(validatorName)
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(
@@ -50,12 +48,11 @@ public class ValidatorGenerator {
                         TypeName.get(validateClass.asType()),
                         ConfigProvider.getExceptionClass()
                 ))
-                .addMethod(getValidateMethod(validFields, validateClass, delegateName))
+                .addMethod(getValidateMethod(validFields, validateClass))
                 .build();
     }
 
-    private MethodSpec getValidateMethod(List<ValidField> validFields, TypeElement validateClass,
-                                         String delegateName) {
+    private MethodSpec getValidateMethod(List<ValidField> validFields, TypeElement validateClass) {
         Elements elementUtils = processingEnv.getElementUtils();
         TypeElement validatorInterface = elementUtils.getTypeElement(Validator.class.getCanonicalName());
         ExecutableElement validateSuperMethod = ProcessorUtils.getMethods(validatorInterface)
@@ -69,28 +66,65 @@ public class ValidatorGenerator {
                 validateClass.asType(),
                 exceptionType
         );
-
         MethodSpec.Builder methodBuilder = MethodSpec.overriding(validateSuperMethod,
                 interfaceWithGeneric, processingEnv.getTypeUtils());
         for (ValidField validField : validFields) {
-            methodBuilder.addCode(validField.createCode(delegateName));
+            methodBuilder.addCode(validField.createCode(VALIDATE_ARGS));
         }
-        return methodBuilder.build();
+        return renameParameters(methodBuilder.build(), VALIDATE_ARGS.args());
+    }
+
+    private MethodSpec renameParameters(MethodSpec source, String... names) {
+        if (names.length == 0) {
+            return source;
+        }
+        if (names.length != source.parameters.size()) {
+            throw new IllegalArgumentException("Rename length != parameters length");
+        }
+        MethodSpec.Builder builder = MethodSpec.methodBuilder(source.name)
+                .returns(source.returnType)
+                .addAnnotations(source.annotations)
+                .addExceptions(source.exceptions)
+                .addModifiers(source.modifiers)
+                .addCode(source.code);
+        int index = 0;
+        for (ParameterSpec parameter : source.parameters) {
+            ParameterSpec renamed = ParameterSpec.builder(parameter.type, names[index])
+                    .addModifiers(parameter.modifiers)
+                    .addAnnotations(parameter.annotations)
+                    .addJavadoc(parameter.javadoc)
+                    .build();
+            builder.addParameter(renamed);
+            index++;
+        }
+        return builder.build();
     }
 
     private List<ValidField> filterValidatedFields(List<VariableElement> allFields) {
         List<ValidField> validFields = new ArrayList<>();
         for (VariableElement field : allFields) {
-            boolean hasValidators = ProcessorUtils.fieldContainsAtLeastOneOfAnnotations(
+            boolean excluded = elementContainsAtLeastOneOfAnnotations(field, Set.of(Exclude.class));
+            if (excluded) {
+                continue;
+            }
+            boolean hasValidators = elementContainsAtLeastOneOfAnnotations(
                     field,
                     basicValidators.keySet()
             );
             if (!hasValidators) {
-                continue;
+                TypeMirror type = field.asType();
+                Types typeUtils = processingEnv.getTypeUtils();
+                Element element = typeUtils.asElement(type);
+                boolean complex = elementContainsAtLeastOneOfAnnotations(element, Set.of(Validate.class));
+                if (complex) {
+                    ComplexField complexField = new ComplexField(field);
+                    validFields.add(complexField);
+                }
+            } else {
+                Map<Annotation, FieldValidator<Annotation>> validators = getValidatorsFor(field);
+                SimpleField simpleField = new SimpleField(field, validators);
+                validFields.add(simpleField);
             }
-            Map<Annotation, FieldValidator<Annotation>> validators = getValidatorsFor(field);
-            ValidField validField = new ValidField(processingEnv, field, validators);
-            validFields.add(validField);
         }
         return validFields;
     }

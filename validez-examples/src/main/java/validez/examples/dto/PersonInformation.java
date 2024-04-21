@@ -2,11 +2,9 @@ package validez.examples.dto;
 
 import lombok.Data;
 import validez.lib.annotation.Validate;
-import validez.lib.annotation.validators.Length;
-import validez.lib.annotation.validators.IntRange;
-import validez.lib.annotation.validators.LongRange;
-import validez.lib.annotation.validators.NotEmpty;
-import validez.lib.annotation.validators.StringRange;
+import validez.lib.annotation.conditions.Exclude;
+import validez.lib.annotation.conditions.Partial;
+import validez.lib.annotation.validators.*;
 
 import java.util.List;
 import java.util.Set;
@@ -39,4 +37,11 @@ public class PersonInformation {
     private Long longStatus;
     @IntRange({1, 58, 99, 134})
     private Integer intStatus;
+    private PaymentData paymentData;
+    @Exclude
+    private PaymentData excludedPaymentData;
+    @Partial(include = {"phoneNumber", "pam"})
+    private PaymentData partialPaymentData;
+    @Partial(exclude = {"pam"})
+    private PaymentData partialExcludePaymentData;
 }

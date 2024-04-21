@@ -12,7 +12,6 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -42,8 +41,8 @@ public class ProcessorUtils {
         return fields;
     }
 
-    public static boolean fieldContainsAtLeastOneOfAnnotations(VariableElement field,
-                                                               Set<Class<? extends Annotation>> annotations) {
+    public static boolean elementContainsAtLeastOneOfAnnotations(Element field,
+                                                                 Set<Class<? extends Annotation>> annotations) {
         for (Class<? extends Annotation> annotation : annotations) {
             Annotation[] val = field.getAnnotationsByType(annotation);
             if (val.length > 0) {

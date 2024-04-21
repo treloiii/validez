@@ -12,6 +12,8 @@ public @interface Length {
 
     int equals() default DEFAULT;
 
+    String group() default "";
+
     String message() default "Length of $N not valid";
 
     boolean format() default true;
