@@ -10,3 +10,4 @@
 - [ ] Complex validations (group validating etc.)
 - [ ] Javadoc for public API
 - [ ] API for support annotations created by users
+- [ ] Add @Generated annotation to generated validators classes
