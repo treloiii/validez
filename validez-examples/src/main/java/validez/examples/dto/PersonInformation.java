@@ -1,11 +1,9 @@
 package validez.examples.dto;
 
 import lombok.Data;
-import validez.examples.handler.CustomMessageHandler;
 import validez.lib.annotation.Validate;
 import validez.lib.annotation.conditions.Exclude;
 import validez.lib.annotation.conditions.Partial;
-import validez.lib.annotation.messaging.ModifyMessage;
 import validez.lib.annotation.validators.*;
 
 import java.util.List;
@@ -26,11 +24,11 @@ public class PersonInformation {
     private Integer age;
     @Length(min = 1982, max = 2016)
     private int born;
-    @NotEmpty(message = "$N null or empty")
+    @NotEmpty
     private List<PersonInformation> children;
     @NotEmpty
     private Set<String> addressLines;
-    @NotEmpty(message = "pseudonym is empty", format = false)
+    @NotEmpty
     @Length(min = 3)
     private String pseudonym;
     @StringRange(value = {"ST1", "ST2"})

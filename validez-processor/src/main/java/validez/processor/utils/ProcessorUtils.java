@@ -1,5 +1,8 @@
 package validez.processor.utils;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 import javax.annotation.Nullable;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
@@ -14,7 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class ProcessorUtils {
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class ProcessorUtils {
 
     public static List<ExecutableElement> getMethods(TypeElement classElement) {
         List<? extends Element> enclosedElements =
