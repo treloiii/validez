@@ -10,6 +10,8 @@ public abstract class ValidField {
 
     public abstract CodeBlock createCode(ValidatorArgs args);
 
+    public abstract VariableElement getField();
+
     protected String generateGetter(VariableElement field) {
         String fieldName = field.getSimpleName().toString();
         fieldName = capitalize(fieldName);

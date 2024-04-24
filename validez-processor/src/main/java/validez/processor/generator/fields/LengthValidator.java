@@ -10,7 +10,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 
-import static validez.processor.utils.CodeUtils.addContextThrower;
+import static validez.processor.utils.CodeUtils.returnValidatorContext;
 
 @RequiredArgsConstructor
 public class LengthValidator implements FieldValidator<Length> {
@@ -27,7 +27,7 @@ public class LengthValidator implements FieldValidator<Length> {
             codeBlockBuilder.add(
                     CodeBlock.builder()
                             .beginControlFlow("if ($N.length() != $L)", fieldName, equals)
-                            .add(addContextThrower(args, fieldName, "equals", Length.class))
+                            .addStatement(returnValidatorContext(fieldName, "equals", Length.class))
                             .endControlFlow()
                             .build()
             );
@@ -38,7 +38,7 @@ public class LengthValidator implements FieldValidator<Length> {
                 codeBlockBuilder.add(
                         CodeBlock.builder()
                                 .beginControlFlow("if ($N.length() > $L)", fieldName, max)
-                                .add(addContextThrower(args, fieldName, "max", Length.class))
+                                .addStatement(returnValidatorContext(fieldName, "max", Length.class))
                                 .endControlFlow()
                                 .build()
                 );
@@ -46,7 +46,7 @@ public class LengthValidator implements FieldValidator<Length> {
                 codeBlockBuilder.add(
                         CodeBlock.builder()
                                 .beginControlFlow("if ($N > $L)", fieldName, max)
-                                .add(addContextThrower(args, fieldName, "max", Length.class))
+                                .addStatement(returnValidatorContext(fieldName, "max", Length.class))
                                 .endControlFlow()
                                 .build()
                 );
@@ -58,7 +58,7 @@ public class LengthValidator implements FieldValidator<Length> {
                 codeBlockBuilder.add(
                         CodeBlock.builder()
                                 .beginControlFlow("if ($N.length() < $L)", fieldName, min)
-                                .add(addContextThrower(args, fieldName, "min", Length.class))
+                                .addStatement(returnValidatorContext(fieldName, "min", Length.class))
                                 .endControlFlow()
                                 .build()
                 );
@@ -66,12 +66,13 @@ public class LengthValidator implements FieldValidator<Length> {
                 codeBlockBuilder.add(
                         CodeBlock.builder()
                                 .beginControlFlow("if ($N < $L)", fieldName, min)
-                                .add(addContextThrower(args, fieldName, "min", Length.class))
+                                .addStatement(returnValidatorContext(fieldName, "min", Length.class))
                                 .endControlFlow()
                                 .build()
                 );
             }
         }
+        codeBlockBuilder.addStatement("return null");
         return codeBlockBuilder.build();
     }
 

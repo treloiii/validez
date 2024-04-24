@@ -11,7 +11,7 @@ import javax.lang.model.element.VariableElement;
 import java.util.ArrayList;
 import java.util.List;
 
-import static validez.processor.utils.CodeUtils.addContextThrower;
+import static validez.processor.utils.CodeUtils.returnValidatorContext;
 
 public class LongRangeValidator implements FieldValidator<LongRange> {
 
@@ -27,7 +27,7 @@ public class LongRangeValidator implements FieldValidator<LongRange> {
         ClassName definedValidator = ClassName.get(InRangeDefinedValidator.class);
         return CodeBlock.builder()
                 .beginControlFlow("if (!$T.validateLong($N, new long[]{$L}))", definedValidator, fieldName, rangeLiteral)
-                .add(addContextThrower(args, fieldName, "value", LongRange.class))
+                .addStatement(returnValidatorContext(fieldName, "value", LongRange.class))
                 .endControlFlow()
                 .build();
     }

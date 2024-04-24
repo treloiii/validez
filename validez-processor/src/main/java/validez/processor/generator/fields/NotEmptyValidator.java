@@ -10,7 +10,7 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import java.util.Collection;
 
-import static validez.processor.utils.CodeUtils.addContextThrower;
+import static validez.processor.utils.CodeUtils.returnValidatorContext;
 import static validez.processor.utils.ProcessorUtils.isFieldSubtypeOf;
 
 @RequiredArgsConstructor
@@ -24,7 +24,7 @@ public class NotEmptyValidator implements FieldValidator<NotEmpty> {
         CodeBlock.Builder notEmptyBuilder = CodeBlock.builder();
         CodeBlock nullCheck = CodeBlock.builder()
                 .beginControlFlow("if ($N == null)", fieldName)
-                .add(addContextThrower(args, fieldName, null, NotEmpty.class))
+                .addStatement(returnValidatorContext(fieldName, null, NotEmpty.class))
                 .endControlFlow()
                 .build();
         notEmptyBuilder.add(nullCheck);
@@ -32,7 +32,7 @@ public class NotEmptyValidator implements FieldValidator<NotEmpty> {
         if (stringOrCollection) {
             CodeBlock emptyCheck = CodeBlock.builder()
                     .beginControlFlow("if ($N.isEmpty())", fieldName)
-                    .add(addContextThrower(args, fieldName, null, NotEmpty.class))
+                    .addStatement(returnValidatorContext(fieldName, null, NotEmpty.class))
                     .endControlFlow()
                     .build();
             notEmptyBuilder.add(emptyCheck);

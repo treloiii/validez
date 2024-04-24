@@ -70,24 +70,50 @@ public final class ProcessorUtils {
     }
 
     @Nullable
-    public static String getAnnotationValue(String name, Class<? extends Annotation> annotation,
-                                            Element element, Elements elementUtils) {
+    public static Object getAnnotationValue(String name, Class<? extends Annotation> annotation,
+                                            Element element, Elements elements) {
         List<? extends AnnotationMirror> annotationMirrors = element.getAnnotationMirrors();
         for (AnnotationMirror annotationMirror : annotationMirrors) {
             String annotationType = annotationMirror.getAnnotationType().toString();
             if (annotationType.equals(annotation.getCanonicalName())) {
-                Map<? extends ExecutableElement, ? extends AnnotationValue> values = elementUtils.getElementValuesWithDefaults(annotationMirror);
+                Map<? extends ExecutableElement, ? extends AnnotationValue> values = elements.getElementValuesWithDefaults(annotationMirror);
                 for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : values.entrySet()) {
                     ExecutableElement propElement = entry.getKey();
                     String propName = propElement.getSimpleName().toString();
                     if (propName.equals(name)) {
                         AnnotationValue annotationValue = entry.getValue();
-                        return annotationValue.toString();
+                        return annotationValue.getValue();
                     }
                 }
             }
         }
         return null;
+    }
+
+    public static List<Object> getAnnotationsValues(String name, Class<? extends Annotation> annotation,
+                                                   Element element, Elements elements) {
+        List<? extends AnnotationMirror> annotationMirrors = element.getAnnotationMirrors();
+        return getAnnotationsValuesFromMirrors(name, annotation, annotationMirrors, elements);
+    }
+
+    public static List<Object> getAnnotationsValuesFromMirrors(String name, Class<? extends Annotation> annotation,
+                                                               List<? extends AnnotationMirror> annotationMirrors, Elements elements) {
+        List<Object> result = new ArrayList<>();
+        for (AnnotationMirror annotationMirror : annotationMirrors) {
+            String annotationType = annotationMirror.getAnnotationType().toString();
+            if (annotationType.equals(annotation.getCanonicalName())) {
+                Map<? extends ExecutableElement, ? extends AnnotationValue> values = elements.getElementValuesWithDefaults(annotationMirror);
+                for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : values.entrySet()) {
+                    ExecutableElement propElement = entry.getKey();
+                    String propName = propElement.getSimpleName().toString();
+                    if (propName.equals(name)) {
+                        AnnotationValue annotationValue = entry.getValue();
+                        result.add(annotationValue.getValue());
+                    }
+                }
+            }
+        }
+        return result;
     }
 
 }

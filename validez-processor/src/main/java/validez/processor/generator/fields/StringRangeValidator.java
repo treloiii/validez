@@ -11,7 +11,7 @@ import javax.lang.model.element.VariableElement;
 import java.util.ArrayList;
 import java.util.List;
 
-import static validez.processor.utils.CodeUtils.addContextThrower;
+import static validez.processor.utils.CodeUtils.returnValidatorContext;
 
 public class StringRangeValidator implements FieldValidator<StringRange> {
 
@@ -27,7 +27,7 @@ public class StringRangeValidator implements FieldValidator<StringRange> {
         ClassName definedValidator = ClassName.get(InRangeDefinedValidator.class);
         return CodeBlock.builder()
                 .beginControlFlow("if (!$T.validateString($N, new String[]{$L}))", definedValidator, fieldName, rangeLiteral)
-                .add(addContextThrower(args, fieldName, "value", StringRange.class))
+                .addStatement(returnValidatorContext(fieldName, "value", StringRange.class))
                 .endControlFlow()
                 .build();
     }

@@ -11,7 +11,7 @@ import javax.lang.model.element.VariableElement;
 import java.util.ArrayList;
 import java.util.List;
 
-import static validez.processor.utils.CodeUtils.addContextThrower;
+import static validez.processor.utils.CodeUtils.returnValidatorContext;
 
 public class IntRangeValidator implements FieldValidator<IntRange> {
 
@@ -27,10 +27,11 @@ public class IntRangeValidator implements FieldValidator<IntRange> {
         ClassName definedValidator = ClassName.get(InRangeDefinedValidator.class);
         return CodeBlock.builder()
                 .beginControlFlow("if (!$T.validateInt($N, new int[]{$L}))", definedValidator, fieldName, rangeLiteral)
-                .add(
-                        addContextThrower(args, fieldName, "value", IntRange.class)
+                .addStatement(
+                        returnValidatorContext(fieldName, "value", IntRange.class)
                 )
                 .endControlFlow()
+                .addStatement("return null")
                 .build();
     }
 

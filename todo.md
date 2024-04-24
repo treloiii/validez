@@ -7,7 +7,7 @@
 - [ ] Remove variables creation for dto fields (or workaround)
 - [ ] Overriding custom exceptions on types
 - [X] Exceptions message API
-- [ ] Complex validations (group validating etc.)
+- [x] Complex validations (group validating etc.)
 - [ ] Javadoc for public API
 - [ ] API for support annotations created by users
 - [ ] Add @Generated annotation to generated validators classes

@@ -28,4 +28,10 @@ public class DefaultMessageHandler implements MessageHandler {
         return pattern.formatted(fieldName);
     }
 
+    @Override
+    @Nonnull
+    public String handleInvariant(@Nonnull String invariantName, @Nonnull Map<String, ValidatorContext> membersContext) {
+        return "invariant %s".formatted(invariantName);
+    }
+
 }

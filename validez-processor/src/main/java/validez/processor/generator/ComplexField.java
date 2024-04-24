@@ -1,6 +1,7 @@
 package validez.processor.generator;
 
 import com.squareup.javapoet.CodeBlock;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import validez.lib.annotation.conditions.Partial;
 import validez.lib.api.Validators;
@@ -12,6 +13,7 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 
+@Getter
 @RequiredArgsConstructor
 public class ComplexField extends ValidField {
 
@@ -49,6 +51,7 @@ public class ComplexField extends ValidField {
                         )
                 )
                 .endControlFlow()
+                .addStatement("return null")
                 .build();
     }
 

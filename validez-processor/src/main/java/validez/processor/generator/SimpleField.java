@@ -2,11 +2,11 @@ package validez.processor.generator;
 
 import com.squareup.javapoet.CodeBlock;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import validez.lib.api.defined.FieldUtils;
 import validez.processor.generator.fields.FieldValidator;
 
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import java.lang.annotation.Annotation;
@@ -16,6 +16,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SimpleField extends ValidField {
 
+    @Getter
     private final VariableElement field;
     private final Map<Annotation, FieldValidator<Annotation>> fieldValidators;
 
@@ -34,6 +35,7 @@ public class SimpleField extends ValidField {
             codeBlockBuilder.add(validatorCode);
         }
         codeBlockBuilder.endControlFlow();
+        codeBlockBuilder.addStatement("return null");
         return codeBlockBuilder.build();
     }
 
