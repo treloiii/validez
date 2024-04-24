@@ -6,6 +6,9 @@ plugins {
 group = 'validez'
 
 jar {
+    metaInf {
+        from('../gradle.properties')
+    }
     from sourceSets.main.output
     from {
         configurations.runtimeClasspath.findAll {it.name.endsWith('.jar')}.collect {zipTree(it)}

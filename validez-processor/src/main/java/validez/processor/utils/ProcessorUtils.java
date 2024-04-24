@@ -1,17 +1,26 @@
 package validez.processor.utils;
 
+import com.squareup.javapoet.AnnotationSpec;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import validez.processor.config.ConfigProvider;
 
 import javax.annotation.Nullable;
+import javax.annotation.processing.Generated;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.*;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.lang.annotation.Annotation;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +28,14 @@ import java.util.Set;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ProcessorUtils {
+
+    public static AnnotationSpec createGenerated(Class<?> generator) {
+        return AnnotationSpec.builder(Generated.class)
+                .addMember("value", "$S", generator.getCanonicalName())
+                .addMember("date", "$S", LocalDateTime.now().toString())
+                .addMember("comments", "$S", "Validez version %s".formatted(ConfigProvider.getProcessorVersion()))
+                .build();
+    }
 
     public static List<ExecutableElement> getMethods(TypeElement classElement) {
         List<? extends Element> enclosedElements =

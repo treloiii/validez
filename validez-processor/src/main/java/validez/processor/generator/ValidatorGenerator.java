@@ -1,35 +1,66 @@
 package validez.processor.generator;
 
-import com.squareup.javapoet.*;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 import validez.lib.annotation.Validate;
 import validez.lib.annotation.Validator;
 import validez.lib.annotation.conditions.Exclude;
 import validez.lib.annotation.conditions.Fields;
 import validez.lib.annotation.conditions.Invariants;
 import validez.lib.annotation.messaging.ModifyMessage;
-import validez.lib.annotation.validators.*;
+import validez.lib.annotation.validators.IntRange;
+import validez.lib.annotation.validators.Length;
+import validez.lib.annotation.validators.LongRange;
+import validez.lib.annotation.validators.NotEmpty;
+import validez.lib.annotation.validators.StringRange;
 import validez.lib.api.messaging.DefaultMessageHandler;
 import validez.lib.api.messaging.ValidatorContext;
 import validez.processor.config.ConfigProvider;
-import validez.processor.generator.fields.*;
+import validez.processor.generator.fields.FieldValidator;
+import validez.processor.generator.fields.IntRangeValidator;
+import validez.processor.generator.fields.LengthValidator;
+import validez.processor.generator.fields.LongRangeValidator;
+import validez.processor.generator.fields.NotEmptyValidator;
+import validez.processor.generator.fields.StringRangeValidator;
 import validez.processor.generator.help.InvariantFields;
 import validez.processor.generator.help.InvariantHolder;
 import validez.processor.utils.ProcessorUtils;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.*;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static validez.processor.generator.ValidatorArgs.VALIDATE_ARGS;
 import static validez.processor.utils.CodeUtils.throwWithContext;
 import static validez.processor.utils.CodeUtils.throwWithContextInvariant;
-import static validez.processor.utils.ProcessorUtils.*;
+import static validez.processor.utils.ProcessorUtils.createGenerated;
+import static validez.processor.utils.ProcessorUtils.elementContainsAtLeastOneOfAnnotations;
+import static validez.processor.utils.ProcessorUtils.getAnnotationValue;
+import static validez.processor.utils.ProcessorUtils.getAnnotationsValues;
+import static validez.processor.utils.ProcessorUtils.getAnnotationsValuesFromMirrors;
 
 public class ValidatorGenerator {
 
@@ -53,6 +84,7 @@ public class ValidatorGenerator {
         Map<String, ValidField> validFields = filterValidatedFields(fields);
         String validatorName = validateClass.getSimpleName().toString() + "ValidatorImpl";
         TypeSpec.Builder generatorBuilder = TypeSpec.classBuilder(validatorName)
+                .addAnnotation(createGenerated(ValidatorGenerator.class))
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(
                         ClassName.get(Validator.class),
