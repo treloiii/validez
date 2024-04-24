@@ -5,9 +5,10 @@
 - [x] Partial validation (includes/excludes)
 - [x] Recursive type validation (validate subsequent objects with @Validate annotation)
 - [ ] ~~Remove variables creation for dto fields (or workaround)~~
-- [ ] Overriding custom exceptions on types
+- [x] Overriding custom exceptions on types
 - [X] Exceptions message API
 - [x] Complex validations (group validating etc.)
 - [ ] Javadoc for public API
 - [ ] API for support annotations created by users
 - [x] Add @Generated annotation to generated validators classes
+- [ ] Unit tests

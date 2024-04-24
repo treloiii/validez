@@ -10,11 +10,17 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigProvider {
 
+    public static final String VALIDATOR_EXCEPTION = "validator.exception";
+
     private static ConfigHolder cachedValue;
+    private static final Map<String, String> overrides = new HashMap<>();
 
     public static void init(Filer filer) {
         if (cachedValue != null) {
@@ -23,11 +29,17 @@ public class ConfigProvider {
         cachedValue = new ConfigHolder(filer);
     }
 
+    public static void override(String property, String value) {
+        overrides.put(property, value);
+    }
+
+    public static void clearOverride(String property) {
+        overrides.remove(property);
+    }
+
     public static ClassName getExceptionClass() {
-        if (cachedValue == null) {
-            throw new RuntimeException("config is not initialized");
-        }
-        return cachedValue.getValue("validator.exception")
+        return Optional.ofNullable(overrides.get(VALIDATOR_EXCEPTION))
+                .or(() -> cachedValue.getValue(VALIDATOR_EXCEPTION))
                 .map(ClassName::bestGuess)
                 .orElse(ClassName.get(InvalidException.class));
     }
