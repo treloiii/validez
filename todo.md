@@ -9,6 +9,6 @@
 - [X] Exceptions message API
 - [x] Complex validations (group validating etc.)
 - [ ] Javadoc for public API
-- [x] API for support annotations created by users
+- [ ] API for support annotations created by users
 - [x] Add @Generated annotation to generated validators classes
 - [ ] Unit tests
