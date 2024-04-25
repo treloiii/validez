@@ -7,12 +7,12 @@ import lombok.RequiredArgsConstructor;
 import validez.lib.api.defined.FieldUtils;
 import validez.processor.generator.fields.FieldValidator;
 import validez.processor.generator.fields.external.ExternalAnnotationValidator;
+import validez.processor.generator.help.AnnotationAndValidator;
 
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeMirror;
 import java.lang.annotation.Annotation;
+import java.util.List;
 import java.util.Map;
 
 @Builder
@@ -23,7 +23,7 @@ public class SimpleField extends ValidField {
     private final VariableElement field;
     private final Map<Annotation, FieldValidator<Annotation>> fieldValidators;
     private final ExternalAnnotationValidator externalAnnotationValidator;
-    private final Map<AnnotationMirror, TypeMirror> externalValidators;
+    private final List<AnnotationAndValidator> externalValidators;
 
     @Override
     public CodeBlock createCode(ValidatorArgs args) {
@@ -39,9 +39,9 @@ public class SimpleField extends ValidField {
             CodeBlock validatorCode = validator.build(annotation, field, args);
             codeBlockBuilder.add(validatorCode);
         }
-        for (Map.Entry<AnnotationMirror, TypeMirror> entry : externalValidators.entrySet()) {
+        for (AnnotationAndValidator exValidator: externalValidators) {
             CodeBlock validatorCode = externalAnnotationValidator
-                    .build(field, entry.getKey(), entry.getValue(), args);
+                    .build(field, exValidator.getAnnotation(), exValidator.getExternalValidatorType(), args);
             codeBlockBuilder.add(validatorCode);
         }
         codeBlockBuilder.endControlFlow();

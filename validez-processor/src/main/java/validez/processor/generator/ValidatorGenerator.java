@@ -30,6 +30,7 @@ import validez.processor.generator.fields.NotEmptyValidator;
 import validez.processor.generator.fields.StringRangeValidator;
 import validez.processor.generator.fields.external.ExternalAnnotationValidator;
 import validez.processor.generator.fields.external.ExternalDefinedAnnotationValidator;
+import validez.processor.generator.help.AnnotationAndValidator;
 import validez.processor.generator.help.InvariantFields;
 import validez.processor.generator.help.InvariantHolder;
 import validez.processor.utils.ProcessorUtils;
@@ -316,7 +317,7 @@ public class ValidatorGenerator {
             if (exclude == null) {
                 String fieldName = field.getSimpleName().toString();
                 Map<Annotation, FieldValidator<Annotation>> fieldValidators = getValidatorsFor(field);
-                Map<AnnotationMirror, TypeMirror> externalValidators = getExternalValidatorsFor(field);
+                List<AnnotationAndValidator> externalValidators = getExternalValidatorsFor(field);
                 if (fieldValidators.isEmpty() && externalValidators.isEmpty()) {
                     TypeMirror fieldType = field.asType();
                     TypeKind fieldTypeKind = fieldType.getKind();
@@ -337,14 +338,14 @@ public class ValidatorGenerator {
         return validFields;
     }
 
-    private Map<AnnotationMirror, TypeMirror> getExternalValidatorsFor(VariableElement field) {
+    private List<AnnotationAndValidator> getExternalValidatorsFor(VariableElement field) {
         List<? extends AnnotationMirror> fieldAnnotations = field.getAnnotationMirrors();
-        Map<AnnotationMirror, TypeMirror> externalValidators = new HashMap<>();
+        List<AnnotationAndValidator> externalValidators = new ArrayList<>();
         for (AnnotationMirror fieldAnnotation : fieldAnnotations) {
             DeclaredType annotationType = fieldAnnotation.getAnnotationType();
             TypeMirror validatorType = registeredPropertyValidators.get(annotationType);
             if (validatorType != null) {
-                externalValidators.put(fieldAnnotation, validatorType);
+                externalValidators.add(new AnnotationAndValidator(fieldAnnotation, validatorType));
             }
         }
         return externalValidators;
