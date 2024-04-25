@@ -11,6 +11,7 @@ import validez.lib.annotation.Validate;
 import validez.lib.annotation.Validator;
 import validez.lib.annotation.conditions.Exclude;
 import validez.lib.annotation.conditions.Fields;
+import validez.lib.annotation.conditions.Invariant;
 import validez.lib.annotation.conditions.Invariants;
 import validez.lib.annotation.messaging.ModifyMessage;
 import validez.lib.annotation.validators.IntRange;
@@ -27,6 +28,8 @@ import validez.processor.generator.fields.LengthValidator;
 import validez.processor.generator.fields.LongRangeValidator;
 import validez.processor.generator.fields.NotEmptyValidator;
 import validez.processor.generator.fields.StringRangeValidator;
+import validez.processor.generator.fields.external.ExternalAnnotationValidator;
+import validez.processor.generator.fields.external.ExternalDefinedAnnotationValidator;
 import validez.processor.generator.help.InvariantFields;
 import validez.processor.generator.help.InvariantHolder;
 import validez.processor.utils.ProcessorUtils;
@@ -34,13 +37,13 @@ import validez.processor.utils.ProcessorUtils;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -57,8 +60,8 @@ import static validez.processor.generator.ValidatorArgs.VALIDATE_ARGS;
 import static validez.processor.utils.CodeUtils.throwWithContext;
 import static validez.processor.utils.CodeUtils.throwWithContextInvariant;
 import static validez.processor.utils.ProcessorUtils.createGenerated;
-import static validez.processor.utils.ProcessorUtils.elementContainsAtLeastOneOfAnnotations;
 import static validez.processor.utils.ProcessorUtils.getAnnotationValue;
+import static validez.processor.utils.ProcessorUtils.getAnnotationsOfType;
 import static validez.processor.utils.ProcessorUtils.getAnnotationsValues;
 import static validez.processor.utils.ProcessorUtils.getAnnotationsValuesFromMirrors;
 
@@ -67,7 +70,11 @@ public class ValidatorGenerator {
     private final ProcessingEnvironment processingEnv;
     private final Map<Class<? extends Annotation>, FieldValidator<?>> basicValidators;
 
-    public ValidatorGenerator(ProcessingEnvironment processingEnvironment) {
+    private final ExternalAnnotationValidator externalValidator;
+    private final Map<TypeMirror, TypeMirror> registeredPropertyValidators;
+
+    public ValidatorGenerator(ProcessingEnvironment processingEnvironment,
+                              Map<TypeMirror, TypeMirror> registeredPropertyValidators) {
         this.processingEnv = processingEnvironment;
         basicValidators = Map.of(
                 Length.class, new LengthValidator(processingEnvironment),
@@ -76,6 +83,8 @@ public class ValidatorGenerator {
                 LongRange.class, new LongRangeValidator(),
                 IntRange.class, new IntRangeValidator()
         );
+        this.registeredPropertyValidators = registeredPropertyValidators;
+        this.externalValidator = new ExternalDefinedAnnotationValidator(processingEnv);
     }
 
     public TypeSpec generateValidator(TypeElement validateClass) {
@@ -156,7 +165,7 @@ public class ValidatorGenerator {
                     );
                     fieldToContext.put(fieldName, contextName);
                     contexts.add(
-                        CodeBlock.of("$N != null", contextName).toString()
+                            CodeBlock.of("$N != null", contextName).toString()
                     );
                     validFields.remove(fieldName);
                 }
@@ -253,6 +262,13 @@ public class ValidatorGenerator {
         Elements elements = processingEnv.getElementUtils();
         List<Object> values = getAnnotationsValues("value", Invariants.class, validateClass, elements);
         List<InvariantHolder> invariants = new ArrayList<>();
+        if (values.isEmpty()) {
+            AnnotationMirror invariant = getAnnotationsOfType(Invariant.class, validateClass, elements);
+            if (invariant != null) {
+                invariants.add(getInvariant(invariant));
+            }
+            return invariants;
+        }
         for (Object value : values) {
             for (AnnotationMirror valueMirror : (List<AnnotationMirror>) value) {
                 invariants.add(getInvariant(valueMirror));
@@ -296,31 +312,42 @@ public class ValidatorGenerator {
     private Map<String, ValidField> filterValidatedFields(List<VariableElement> allFields) {
         Map<String, ValidField> validFields = new LinkedHashMap<>();
         for (VariableElement field : allFields) {
-            String fieldName = field.getSimpleName().toString();
-            boolean excluded = elementContainsAtLeastOneOfAnnotations(field, Set.of(Exclude.class));
-            if (excluded) {
-                continue;
-            }
-            boolean hasValidators = elementContainsAtLeastOneOfAnnotations(
-                    field,
-                    basicValidators.keySet()
-            );
-            if (!hasValidators) {
-                TypeMirror type = field.asType();
-                Types typeUtils = processingEnv.getTypeUtils();
-                Element element = typeUtils.asElement(type);
-                boolean complex = elementContainsAtLeastOneOfAnnotations(element, Set.of(Validate.class));
-                if (complex) {
-                    ComplexField complexField = new ComplexField(field);
-                    validFields.put(fieldName, complexField);
+            Exclude exclude = field.getAnnotation(Exclude.class);
+            if (exclude == null) {
+                String fieldName = field.getSimpleName().toString();
+                Map<Annotation, FieldValidator<Annotation>> fieldValidators = getValidatorsFor(field);
+                Map<AnnotationMirror, TypeMirror> externalValidators = getExternalValidatorsFor(field);
+                if (fieldValidators.isEmpty() && externalValidators.isEmpty()) {
+                    TypeMirror fieldType = field.asType();
+                    TypeKind fieldTypeKind = fieldType.getKind();
+                    if (!fieldTypeKind.isPrimitive()) {
+                        Validate validate = field.getAnnotation(Validate.class);
+                        if (validate != null) {
+                            ComplexField complexField = new ComplexField(field);
+                            validFields.put(fieldName, complexField);
+                        }
+                    }
+                } else {
+                    SimpleField simpleField = new SimpleField(field, fieldValidators,
+                            externalValidator, externalValidators);
+                    validFields.put(fieldName, simpleField);
                 }
-            } else {
-                Map<Annotation, FieldValidator<Annotation>> validators = getValidatorsFor(field);
-                SimpleField simpleField = new SimpleField(field, validators);
-                validFields.put(fieldName, simpleField);
             }
         }
         return validFields;
+    }
+
+    private Map<AnnotationMirror, TypeMirror> getExternalValidatorsFor(VariableElement field) {
+        List<? extends AnnotationMirror> fieldAnnotations = field.getAnnotationMirrors();
+        Map<AnnotationMirror, TypeMirror> externalValidators = new HashMap<>();
+        for (AnnotationMirror fieldAnnotation : fieldAnnotations) {
+            DeclaredType annotationType = fieldAnnotation.getAnnotationType();
+            TypeMirror validatorType = registeredPropertyValidators.get(annotationType);
+            if (validatorType != null) {
+                externalValidators.put(fieldAnnotation, validatorType);
+            }
+        }
+        return externalValidators;
     }
 
     private <T extends Annotation> Map<T, FieldValidator<T>> getValidatorsFor(VariableElement field) {

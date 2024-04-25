@@ -1,5 +1,6 @@
 package validez.processor.utils;
 
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
@@ -64,16 +65,45 @@ public final class CodeUtils {
     }
 
     public static CodeBlock returnValidatorContext(Name fieldName,
-                                             String propertyName,
-                                             Class<? extends Annotation> annotation) {
+                                                   String propertyName,
+                                                   ClassName annotation) {
         Map<String, Object> named = new LinkedHashMap<>();
         named.put("contextClass", ValidatorContext.class);
         named.put("field", fieldName);
         named.put("annotationClass", annotation);
-        named.put("annotationName", annotation.getSimpleName());
+        named.put("annotationName", annotation.simpleName());
         named.put("property", propertyName);
         return CodeBlock.builder()
                 .addNamed("return new $contextClass:T($annotationName:S, $annotationClass:T.class, $property:S, $field:L)", named)
+                .build();
+    }
+
+    public static CodeBlock returnValidatorContext(Name fieldName,
+                                                   String propertyName,
+                                                   Class<? extends Annotation> annotation) {
+        return returnValidatorContext(fieldName, propertyName, ClassName.get(annotation));
+    }
+
+    public static CodeBlock initializeArray(Class<?> leftType, Class<?> rightType,
+                                            String arrayName, int size) {
+        return initializeArray(
+                ClassName.get(leftType),
+                ClassName.get(rightType),
+                arrayName,
+                size
+        );
+    }
+
+    public static CodeBlock initializeArray(TypeName leftType, TypeName rightType,
+                                            String arrayName, int size) {
+        return CodeBlock.builder()
+                .addStatement(
+                        "$T[] $N = new $T[$L]",
+                        leftType,
+                        arrayName,
+                        rightType,
+                        size
+                )
                 .build();
     }
 

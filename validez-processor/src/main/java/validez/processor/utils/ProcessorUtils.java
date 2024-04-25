@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ProcessorUtils {
@@ -59,17 +58,6 @@ public final class ProcessorUtils {
             }
         }
         return fields;
-    }
-
-    public static boolean elementContainsAtLeastOneOfAnnotations(Element field,
-                                                                 Set<Class<? extends Annotation>> annotations) {
-        for (Class<? extends Annotation> annotation : annotations) {
-            Annotation[] val = field.getAnnotationsByType(annotation);
-            if (val.length > 0) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static boolean isFieldSubtypeOf(VariableElement field, Class<?> superClass,
@@ -131,6 +119,19 @@ public final class ProcessorUtils {
             }
         }
         return result;
+    }
+
+    @Nullable
+    public static AnnotationMirror getAnnotationsOfType(Class<? extends Annotation> annotationClass,
+                                                        Element element, Elements elements) {
+        List<? extends AnnotationMirror> annotationMirrors = elements.getAllAnnotationMirrors(element);
+        for (AnnotationMirror annotationMirror : annotationMirrors) {
+            String annotationCanonicalClass = annotationMirror.getAnnotationType().toString();
+            if (annotationCanonicalClass.equals(annotationClass.getCanonicalName())) {
+                return annotationMirror;
+            }
+        }
+        return null;
     }
 
 }
