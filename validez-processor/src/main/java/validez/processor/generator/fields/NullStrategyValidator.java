@@ -15,7 +15,8 @@ public abstract class NullStrategyValidator {
     public void addNullCheckByStrategy(VariableElement field,
                                        NullValueStrategy strategy,
                                        CodeBlock.Builder fieldCodeBuilder,
-                                       Class<? extends Annotation> annotation) {
+                                       Class<? extends Annotation> annotation,
+                                       String propertyName) {
         if (!isFieldPrimitive(field)) {
             Name fieldName = field.getSimpleName();
             fieldCodeBuilder
@@ -25,7 +26,7 @@ public abstract class NullStrategyValidator {
                         .addStatement("return null");
             } else {
                 fieldCodeBuilder
-                        .addStatement(returnValidatorContext(fieldName, "nullStrategy", annotation));
+                        .addStatement(returnValidatorContext(fieldName, propertyName, annotation));
             }
             fieldCodeBuilder.endControlFlow();
         }

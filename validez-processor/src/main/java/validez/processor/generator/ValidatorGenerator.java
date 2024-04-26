@@ -18,6 +18,7 @@ import validez.lib.annotation.validators.IntRange;
 import validez.lib.annotation.validators.Length;
 import validez.lib.annotation.validators.LongRange;
 import validez.lib.annotation.validators.NotEmpty;
+import validez.lib.annotation.validators.NotNull;
 import validez.lib.annotation.validators.StringRange;
 import validez.lib.api.messaging.DefaultMessageHandler;
 import validez.lib.api.messaging.ValidatorContext;
@@ -27,6 +28,7 @@ import validez.processor.generator.fields.IntRangeValidator;
 import validez.processor.generator.fields.LengthValidator;
 import validez.processor.generator.fields.LongRangeValidator;
 import validez.processor.generator.fields.NotEmptyValidator;
+import validez.processor.generator.fields.NotNullValidator;
 import validez.processor.generator.fields.StringRangeValidator;
 import validez.processor.generator.fields.external.ExternalAnnotationValidator;
 import validez.processor.generator.fields.external.ExternalDefinedAnnotationValidator;
@@ -82,7 +84,8 @@ public class ValidatorGenerator {
                 NotEmpty.class, new NotEmptyValidator(processingEnvironment),
                 StringRange.class, new StringRangeValidator(),
                 LongRange.class, new LongRangeValidator(),
-                IntRange.class, new IntRangeValidator()
+                IntRange.class, new IntRangeValidator(),
+                NotNull.class, new NotNullValidator()
         );
         this.registeredPropertyValidators = registeredPropertyValidators;
         this.externalValidator = new ExternalDefinedAnnotationValidator(processingEnv);

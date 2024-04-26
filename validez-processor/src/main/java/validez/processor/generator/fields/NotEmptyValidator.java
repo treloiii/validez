@@ -3,6 +3,7 @@ package validez.processor.generator.fields;
 import com.squareup.javapoet.CodeBlock;
 import lombok.RequiredArgsConstructor;
 import validez.lib.annotation.validators.NotEmpty;
+import validez.lib.annotation.validators.NullValueStrategy;
 import validez.processor.generator.ValidatorArgs;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -14,7 +15,7 @@ import static validez.processor.utils.CodeUtils.returnValidatorContext;
 import static validez.processor.utils.ProcessorUtils.isFieldSubtypeOf;
 
 @RequiredArgsConstructor
-public class NotEmptyValidator implements FieldValidator<NotEmpty> {
+public class NotEmptyValidator extends NullStrategyValidator implements FieldValidator<NotEmpty> {
 
     private final ProcessingEnvironment processingEnvironment;
 
@@ -22,12 +23,8 @@ public class NotEmptyValidator implements FieldValidator<NotEmpty> {
     public CodeBlock build(NotEmpty annotation, VariableElement field, ValidatorArgs args) {
         Name fieldName = field.getSimpleName();
         CodeBlock.Builder notEmptyBuilder = CodeBlock.builder();
-        CodeBlock nullCheck = CodeBlock.builder()
-                .beginControlFlow("if ($N == null)", fieldName)
-                .addStatement(returnValidatorContext(fieldName, null, NotEmpty.class))
-                .endControlFlow()
-                .build();
-        notEmptyBuilder.add(nullCheck);
+        addNullCheckByStrategy(field, NullValueStrategy.NULL_NOT_ALLOWED,
+                notEmptyBuilder, NotEmpty.class, null);
         boolean stringOrCollection = isStringOrCollection(field);
         if (stringOrCollection) {
             CodeBlock emptyCheck = CodeBlock.builder()

@@ -7,6 +7,7 @@ import validez.lib.annotation.Validate;
 import validez.lib.annotation.conditions.Fields;
 import validez.lib.annotation.conditions.Invariant;
 import validez.lib.annotation.validators.NotEmpty;
+import validez.lib.annotation.validators.NotNull;
 
 @Data
 @Validate
@@ -27,6 +28,6 @@ public class CustomValidatedDto {
     @NotEmpty
     private String stringVal;
 
-    @NotEmpty
+    @NotNull
     private String stringVal2;
 }

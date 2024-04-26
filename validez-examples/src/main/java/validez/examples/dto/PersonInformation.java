@@ -4,8 +4,14 @@ import lombok.Data;
 import validez.lib.annotation.Validate;
 import validez.lib.annotation.conditions.Exclude;
 import validez.lib.annotation.conditions.Partial;
-import validez.lib.annotation.validators.*;
+import validez.lib.annotation.validators.IntRange;
+import validez.lib.annotation.validators.Length;
+import validez.lib.annotation.validators.LongRange;
+import validez.lib.annotation.validators.NotEmpty;
+import validez.lib.annotation.validators.NotNull;
+import validez.lib.annotation.validators.StringRange;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
@@ -44,4 +50,7 @@ public class PersonInformation {
     private PaymentData partialPaymentData;
     @Partial(exclude = {"pam"})
     private PaymentData partialExcludePaymentData;
+
+    @NotNull
+    private BigDecimal decimalVal;
 }

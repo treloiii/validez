@@ -11,6 +11,7 @@ import validez.lib.annotation.messaging.ModifyMessage;
 import validez.lib.annotation.validators.IntRange;
 import validez.lib.annotation.validators.Length;
 import validez.lib.annotation.validators.NotEmpty;
+import validez.lib.annotation.validators.NotNull;
 
 @Data
 @Validate
@@ -65,4 +66,7 @@ public class PaymentData {
 
     @IntRange({1, 2, 3})
     private int paymentType;
+
+    @NotNull
+    private String additionalInfo;
 }

@@ -25,7 +25,8 @@ public class LengthValidator extends NullStrategyValidator implements FieldValid
         boolean number = isNumber(field);
         CodeBlock.Builder codeBlockBuilder = CodeBlock.builder();
         NullValueStrategy nullValueStrategy = length.nullStrategy();
-        addNullCheckByStrategy(field, nullValueStrategy, codeBlockBuilder, Length.class);
+        addNullCheckByStrategy(field, nullValueStrategy, codeBlockBuilder,
+                Length.class, "nullStrategy");
         long equals = length.equals();
         if (equals != Long.MIN_VALUE && !number) {
             codeBlockBuilder.add(
