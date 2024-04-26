@@ -10,6 +10,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Partial {
 
+
     String[] include() default {};
 
     String[] exclude() default {};

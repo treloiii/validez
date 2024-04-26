@@ -108,13 +108,17 @@ public class ValidatorProcessor extends AbstractProcessor {
             }
             if (propertyValidatorInterfaceType == null) {
                 throw new RuntimeException("Class marked with @Register " +
-                        "must implement PropertyValidator interface");
+                        "must implement %s interface"
+                                .formatted(ExternalValidator.class.getCanonicalName())
+                );
             }
             List<? extends TypeMirror> typeParameters
                     = propertyValidatorInterfaceType.getTypeArguments();
             if (typeParameters.isEmpty()) {
                 throw new RuntimeException("Class marked with @Register " +
-                        "must implement PropertyValidator interface with type parameter");
+                        "must implement %s interface with type parameter"
+                                .formatted(ExternalValidator.class.getCanonicalName())
+                );
             }
             TypeMirror annotationType = typeParameters.get(0);
             registeredPropertyValidators.put(annotationType, propertyValidator.asType());

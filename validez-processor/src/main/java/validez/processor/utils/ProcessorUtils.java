@@ -134,4 +134,9 @@ public final class ProcessorUtils {
         return null;
     }
 
+    public static boolean isFieldPrimitive(VariableElement field) {
+        TypeKind typeKind = field.asType().getKind();
+        return typeKind.isPrimitive();
+    }
+
 }

@@ -8,7 +8,9 @@
 - [x] Overriding custom exceptions on types
 - [X] Exceptions message API
 - [x] Complex validations (group validating etc.)
-- [ ] Javadoc for public API
+- [x] Javadoc for public API
 - [x] API for support annotations created by users
 - [x] Add @Generated annotation to generated validators classes
 - [ ] Unit tests
+- [x] Improve Length validator for equals on numbers and equals default value override
+- [x] Make "out-of-box" validators npe safe

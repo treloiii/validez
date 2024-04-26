@@ -1,11 +1,18 @@
 package validez.lib.api.messaging;
 
-import validez.lib.annotation.validators.*;
+import validez.lib.annotation.validators.IntRange;
+import validez.lib.annotation.validators.Length;
+import validez.lib.annotation.validators.LongRange;
+import validez.lib.annotation.validators.NotEmpty;
+import validez.lib.annotation.validators.StringRange;
 
 import javax.annotation.Nonnull;
 import java.lang.annotation.Annotation;
 import java.util.Map;
 
+/**
+ * This handler will be used by default if no ones is explicitly defined
+ */
 public class DefaultMessageHandler implements MessageHandler {
 
     private static final Map<Class<? extends Annotation>, String> PATTERNS =
