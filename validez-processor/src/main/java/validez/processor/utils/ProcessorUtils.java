@@ -3,6 +3,7 @@ package validez.processor.utils;
 import com.squareup.javapoet.AnnotationSpec;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import validez.lib.annotation.ValidatorThrows;
 import validez.processor.config.ConfigProvider;
 
 import javax.annotation.Nullable;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ProcessorUtils {
@@ -139,4 +141,12 @@ public final class ProcessorUtils {
         return typeKind.isPrimitive();
     }
 
+    @Nullable
+    public static String parseException(TypeElement validateClassElement, Elements elements) {
+        Object exceptionClass = ProcessorUtils.getAnnotationValue("value", ValidatorThrows.class,
+                validateClassElement, elements);
+        return Optional.ofNullable(exceptionClass)
+                .map(String::valueOf)
+                .orElse(null);
+    }
 }

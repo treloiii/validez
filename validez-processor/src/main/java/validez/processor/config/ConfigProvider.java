@@ -44,6 +44,12 @@ public class ConfigProvider {
                 .orElse(ClassName.get(InvalidException.class));
     }
 
+    public static ClassName getGlobalException() {
+        return cachedValue.getValue(VALIDATOR_EXCEPTION)
+                .map(ClassName::bestGuess)
+                .orElse(ClassName.get(InvalidException.class));
+    }
+
     public static String getProcessorVersion() {
         try (InputStream inputStream = ConfigProvider.class
                 .getClassLoader()

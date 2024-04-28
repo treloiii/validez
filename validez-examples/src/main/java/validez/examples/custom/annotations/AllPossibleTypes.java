@@ -16,7 +16,7 @@ public @interface AllPossibleTypes {
 
     boolean boolean_() default false;
 
-    byte byte_() default (byte) 254;
+    byte byte_() default (byte) 123;
 
     int[] integers() default {1, 2, 3};
 

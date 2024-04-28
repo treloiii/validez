@@ -31,7 +31,6 @@ public class IntRangeValidator implements FieldValidator<IntRange> {
                         returnValidatorContext(fieldName, "value", IntRange.class)
                 )
                 .endControlFlow()
-                .addStatement("return null")
                 .build();
     }
 

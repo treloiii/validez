@@ -1,6 +1,9 @@
 package validez.examples.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import validez.lib.annotation.Validate;
 import validez.lib.annotation.conditions.Exclude;
 import validez.lib.annotation.conditions.Partial;
@@ -15,6 +18,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Data
 @Validate
 public class PersonInformation {

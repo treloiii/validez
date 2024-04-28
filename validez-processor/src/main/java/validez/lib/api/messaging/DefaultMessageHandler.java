@@ -28,9 +28,18 @@ public class DefaultMessageHandler implements MessageHandler {
     @Override
     public String handle(String fieldName, ValidatorContext context) {
         Class<? extends Annotation> annotation = context.getAnnotationClass();
+        if (annotation == null) {
+            //only with caught exception
+            Exception cause = context.getCause();
+            if (cause == null) {
+                //not possible, returns simple message
+                return "%s is invalid".formatted(fieldName);
+            }
+            return cause.getMessage();
+        }
         String pattern = PATTERNS.get(annotation);
         if (pattern == null) {
-            return "%s is not valid by %s".formatted(fieldName, context.getName());
+            return "%s is invalid by %s".formatted(fieldName, context.getName());
         }
         return pattern.formatted(fieldName);
     }
@@ -39,6 +48,11 @@ public class DefaultMessageHandler implements MessageHandler {
     @Nonnull
     public String handleInvariant(@Nonnull String invariantName, @Nonnull Map<String, ValidatorContext> membersContext) {
         return "invariant %s".formatted(invariantName);
+    }
+
+    @Override
+    public String handleNull() {
+        return "argument is null";
     }
 
 }

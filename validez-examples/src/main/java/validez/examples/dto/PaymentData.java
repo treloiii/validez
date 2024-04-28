@@ -1,6 +1,9 @@
 package validez.examples.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import validez.examples.exceptions.InvalidPaymentData;
 import validez.examples.handler.CustomMessageHandler;
 import validez.lib.annotation.Validate;
@@ -14,6 +17,9 @@ import validez.lib.annotation.validators.NotEmpty;
 import validez.lib.annotation.validators.NotNull;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Validate
 @ValidatorThrows(InvalidPaymentData.class)
 @ModifyMessage(messageHandler = CustomMessageHandler.class)

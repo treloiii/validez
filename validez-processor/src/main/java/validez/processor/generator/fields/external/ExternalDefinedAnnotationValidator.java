@@ -13,10 +13,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.PrimitiveType;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -125,19 +122,16 @@ public class ExternalDefinedAnnotationValidator implements ExternalAnnotationVal
                         } else {
                             //array element primitive value handle
                             Class<?> elementValueClass = listElementValue.getClass();
-                            TypeElement valueElement = elements.getTypeElement(elementValueClass.getCanonicalName());
-                            PrimitiveType valueType = types.unboxedType(valueElement.asType());
+                            TypeName elementValueClassName = ClassName.get(elementValueClass);
+                            String cast = "";
+                            if (elementValueClassName.isBoxedPrimitive()) {
+                                elementValueClassName = elementValueClassName.unbox();
+                                cast = "(" + elementValueClassName.toString() + ")";
+                            }
                             if (iteration == 0) {
                                 arrayValuesInitBuilder.add(
-                                        createArray(elementValueClass, arrayName, listValue)
+                                        createArray(elementValueClassName, arrayName, listValue)
                                 );
-                            }
-                            TypeKind valueKind = valueType.getKind();
-                            String cast = "";
-                            if (TypeKind.FLOAT.equals(valueKind)) {
-                                cast = "(float)";
-                            } else if (TypeKind.LONG.equals(valueKind)) {
-                                cast = "(long)";
                             }
                             arrayValuesInitBuilder.addStatement("$N[$L] = $L $L",
                                     arrayName, iteration, cast, listElementValue);
@@ -175,7 +169,14 @@ public class ExternalDefinedAnnotationValidator implements ExternalAnnotationVal
                 propertiesInit.addStatement("$N.put($S, $L)", mapName, property, deepPropertiesName);
             } else {
                 //primitive value handle
-                propertiesInit.addStatement("$N.put($S, $L)", mapName, property, objectValue);
+                Class<?> elementValueClass = objectValue.getClass();
+                TypeName elementValueClassName = ClassName.get(elementValueClass);
+                String cast = "";
+                if (elementValueClassName.isBoxedPrimitive()) {
+                    elementValueClassName = elementValueClassName.unbox();
+                    cast = "(" + elementValueClassName.toString() + ")";
+                }
+                propertiesInit.addStatement("$N.put($S, $L$L)", mapName, property, cast, objectValue);
             }
             annotationOrder++;
         }

@@ -22,7 +22,6 @@ import validez.lib.annotation.validators.NotNull;
 import validez.lib.annotation.validators.StringRange;
 import validez.lib.api.messaging.DefaultMessageHandler;
 import validez.lib.api.messaging.ValidatorContext;
-import validez.processor.config.ConfigProvider;
 import validez.processor.generator.fields.FieldValidator;
 import validez.processor.generator.fields.IntRangeValidator;
 import validez.processor.generator.fields.LengthValidator;
@@ -40,6 +39,7 @@ import validez.processor.utils.ProcessorUtils;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
@@ -59,6 +59,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static validez.processor.config.ConfigProvider.getExceptionClass;
 import static validez.processor.generator.ValidatorArgs.VALIDATE_ARGS;
 import static validez.processor.utils.CodeUtils.throwWithContext;
 import static validez.processor.utils.CodeUtils.throwWithContextInvariant;
@@ -102,7 +103,7 @@ public class ValidatorGenerator {
                 .addSuperinterface(ParameterizedTypeName.get(
                         ClassName.get(Validator.class),
                         TypeName.get(validateClass.asType()),
-                        ConfigProvider.getExceptionClass()
+                        getExceptionClass()
                 ));
         generatorBuilder.addMethod(getValidateMethod(validFields, invariants, validateClass, generatorBuilder));
         return generatorBuilder.build();
@@ -117,7 +118,7 @@ public class ValidatorGenerator {
         ExecutableElement validateSuperMethod = ProcessorUtils.getMethods(validatorInterface)
                 .get(0);
         Types typeUtils = processingEnv.getTypeUtils();
-        TypeMirror exceptionType = elementUtils.getTypeElement(ConfigProvider.getExceptionClass().toString())
+        TypeMirror exceptionType = elementUtils.getTypeElement(getExceptionClass().toString())
                 .asType();
         //get type with generic, as example: Validator<SomeObject>
         DeclaredType interfaceWithGeneric = typeUtils.getDeclaredType(
@@ -137,9 +138,17 @@ public class ValidatorGenerator {
             handlerClassName = ClassName.get(DefaultMessageHandler.class);
         }
         CodeBlock handlerInitCode = CodeBlock.builder()
-                .addStatement("$T messageHandler_ = new $T()", handlerClassName, handlerClassName)
+                .addStatement("$T $N = new $T()",
+                        handlerClassName, VALIDATE_ARGS.getMessageHandlerName(), handlerClassName)
                 .build();
         methodBuilder.addCode(handlerInitCode);
+        methodBuilder.addCode(
+                CodeBlock.builder()
+                        .beginControlFlow("if ($N == null)", VALIDATE_ARGS.getDelegateName())
+                        .addStatement("throw new $T($N.handleNull())", getExceptionClass(), VALIDATE_ARGS.getMessageHandlerName())
+                        .endControlFlow()
+                        .build()
+        );
 
         for (InvariantHolder invariant : invariants) {
             String invariantName = invariant.getName();
@@ -232,7 +241,7 @@ public class ValidatorGenerator {
                                 .build()
                 )
                 .addCode(field.createCode(VALIDATE_ARGS))
-                .addException(ConfigProvider.getExceptionClass())
+                .addException(getExceptionClass())
                 .build();
     }
 
@@ -315,6 +324,8 @@ public class ValidatorGenerator {
 
     private Map<String, ValidField> filterValidatedFields(List<VariableElement> allFields) {
         Map<String, ValidField> validFields = new LinkedHashMap<>();
+        Types types = processingEnv.getTypeUtils();
+        Elements elements = processingEnv.getElementUtils();
         for (VariableElement field : allFields) {
             Exclude exclude = field.getAnnotation(Exclude.class);
             if (exclude == null) {
@@ -325,9 +336,10 @@ public class ValidatorGenerator {
                     TypeMirror fieldType = field.asType();
                     TypeKind fieldTypeKind = fieldType.getKind();
                     if (!fieldTypeKind.isPrimitive()) {
-                        Validate validate = field.getAnnotation(Validate.class);
+                        Element fieldElement = types.asElement(fieldType);
+                        Validate validate = fieldElement.getAnnotation(Validate.class);
                         if (validate != null) {
-                            ComplexField complexField = new ComplexField(field);
+                            ComplexField complexField = new ComplexField(types, elements, field);
                             validFields.put(fieldName, complexField);
                         }
                     }

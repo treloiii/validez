@@ -3,16 +3,13 @@ package validez.processor;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
-import validez.lib.annotation.ValidatorThrows;
 import validez.lib.api.Validators;
 import validez.lib.api.external.ExternalValidator;
 import validez.processor.config.ConfigProvider;
 import validez.processor.generator.ValidatorGenerator;
 import validez.processor.generator.ValidatorsFillerGenerator;
 import validez.processor.utils.ClassWriter;
-import validez.processor.utils.ProcessorUtils;
 
-import javax.annotation.Nullable;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
@@ -29,10 +26,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static validez.processor.config.ConfigProvider.VALIDATOR_EXCEPTION;
+import static validez.processor.utils.ProcessorUtils.parseException;
 
 @SupportedAnnotationTypes({"validez.lib.annotation.Validate", "validez.lib.annotation.external.Register"})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
@@ -62,13 +59,14 @@ public class ValidatorProcessor extends AbstractProcessor {
         if (validateClasses.isEmpty()) {
             return true;
         }
+        Elements elements = processingEnv.getElementUtils();
         ValidatorGenerator generator = new ValidatorGenerator(processingEnv, registeredPropertyValidators);
         Map<TypeElement, JavaFile> validators = new HashMap<>();
         for (Element validateClass : validateClasses) {
             if (validateClass instanceof TypeElement) {
                 try {
                     TypeElement validateClassElement = (TypeElement) validateClass;
-                    String onClassException = parseException(validateClassElement);
+                    String onClassException = parseException(validateClassElement, elements);
                     ConfigProvider.override(VALIDATOR_EXCEPTION, onClassException);
                     TypeSpec validator = generator.generateValidator(validateClassElement);
                     JavaFile validatorSource = classWriter.writeClass(validator, validateClassElement);
@@ -80,8 +78,7 @@ public class ValidatorProcessor extends AbstractProcessor {
         }
         ValidatorsFillerGenerator validatorsFillerGenerator = new ValidatorsFillerGenerator();
         TypeSpec validatorsFiller = validatorsFillerGenerator.generate(validators);
-        Elements elementUtils = processingEnv.getElementUtils();
-        TypeElement validatorsClass = elementUtils.getTypeElement(Validators.class.getCanonicalName());
+        TypeElement validatorsClass = elements.getTypeElement(Validators.class.getCanonicalName());
         classWriter.writeClass(validatorsFiller, validatorsClass);
         return true;
     }
@@ -126,13 +123,4 @@ public class ValidatorProcessor extends AbstractProcessor {
         return registeredPropertyValidators;
     }
 
-    @Nullable
-    private String parseException(TypeElement validateClassElement) {
-        Elements elements = processingEnv.getElementUtils();
-        Object exceptionClass = ProcessorUtils.getAnnotationValue("value", ValidatorThrows.class,
-                validateClassElement, elements);
-        return Optional.ofNullable(exceptionClass)
-                .map(String::valueOf)
-                .orElse(null);
-    }
 }

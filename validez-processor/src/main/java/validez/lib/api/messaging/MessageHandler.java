@@ -28,11 +28,16 @@ public interface MessageHandler {
     /**
      * Method will be called, when invariant invalid, just before exception throwing, for creating exception message
      * @param invariantName not passed invariant name
-     * @param membersContext validation context's of all invariant fields, each entry of Map is not null.
+     * @param membersContext validation context's of all invalid invariant fields, each entry of Map is not null.
      * @see ValidatorContext
      * @return message for exception
      */
     @Nonnull
     String handleInvariant(@Nonnull String invariantName, @Nonnull Map<String, ValidatorContext> membersContext);
 
+    /**
+     * Method will be called, if passed to validator {@link validez.lib.annotation.Validator} object is null
+     * @return message for exception
+     */
+    String handleNull();
 }

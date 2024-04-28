@@ -67,14 +67,27 @@ public final class CodeUtils {
     public static CodeBlock returnValidatorContext(Name fieldName,
                                                    String propertyName,
                                                    ClassName annotation) {
+        return returnValidatorContext(fieldName, propertyName, annotation, null);
+    }
+
+    public static CodeBlock returnValidatorContext(Name fieldName,
+                                                   String propertyName,
+                                                   ClassName annotation,
+                                                   String caughtException) {
         Map<String, Object> named = new LinkedHashMap<>();
         named.put("contextClass", ValidatorContext.class);
         named.put("field", fieldName);
-        named.put("annotationClass", annotation);
-        named.put("annotationName", annotation.simpleName());
+        if (annotation == null) {
+            named.put("annotationClass", null);
+        } else {
+            named.put("annotationClass", annotation + ".class");
+        }
+        named.put("annotationName", fieldName);
         named.put("property", propertyName);
+        named.put("caughtException", caughtException);
         return CodeBlock.builder()
-                .addNamed("return new $contextClass:T($annotationName:S, $annotationClass:T.class, $property:S, $field:L)", named)
+                .addNamed("return new $contextClass:T($annotationName:S, $annotationClass:L," +
+                        " $property:S, $field:L, $caughtException:L)", named)
                 .build();
     }
 
