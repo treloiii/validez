@@ -19,17 +19,25 @@ public class ClassWriter {
 
     private final ProcessingEnvironment processingEnvironment;
 
+    public boolean hasPackage(TypeElement element) {
+        Elements elements = processingEnvironment.getElementUtils();
+        PackageElement packageElement = elements.getPackageOf(element);
+        String packageName = packageElement.getQualifiedName().toString();
+        return !packageName.isBlank();
+    }
+
     /**
      * Write generated class to package of original class
      */
     public JavaFile writeClass(TypeSpec generatedSpec, TypeElement originalElement) {
-        Elements elementUtils = processingEnvironment.getElementUtils();
-        PackageElement packageElement = elementUtils.getPackageOf(originalElement);
+        Elements elements = processingEnvironment.getElementUtils();
+        PackageElement packageElement = elements.getPackageOf(originalElement);
         String packageName = packageElement.getQualifiedName().toString();
         JavaFile javaFile = JavaFile.builder(packageName, generatedSpec)
                 .build();
         Filer filer = processingEnvironment.getFiler();
-        String canonicalName = javaFile.packageName + "." + generatedSpec.name;
+        String canonicalName =
+                javaFile.packageName + "." + generatedSpec.name;
         try {
             JavaFileObject sourceFile = filer.createSourceFile(canonicalName);
             try (Writer writer = new BufferedWriter(sourceFile.openWriter())) {

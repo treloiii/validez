@@ -52,6 +52,7 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -354,6 +355,9 @@ public class ValidatorGenerator {
     }
 
     private List<AnnotationAndValidator> getExternalValidatorsFor(VariableElement field) {
+        if (registeredPropertyValidators.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<? extends AnnotationMirror> fieldAnnotations = field.getAnnotationMirrors();
         List<AnnotationAndValidator> externalValidators = new ArrayList<>();
         for (AnnotationMirror fieldAnnotation : fieldAnnotations) {
