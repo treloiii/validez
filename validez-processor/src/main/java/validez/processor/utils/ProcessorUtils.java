@@ -23,6 +23,7 @@ import javax.lang.model.util.Types;
 import java.lang.annotation.Annotation;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -134,6 +135,18 @@ public final class ProcessorUtils {
             }
         }
         return null;
+    }
+
+    public static Map<String, AnnotationValue> getAnnotationValues(AnnotationMirror mirror) {
+        Map<? extends ExecutableElement, ? extends AnnotationValue> values = mirror.getElementValues();
+        Map<String, AnnotationValue> resultValues = new HashMap<>();
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : values.entrySet()) {
+            ExecutableElement executableElement = entry.getKey();
+            AnnotationValue annotationValue = entry.getValue();
+            String name = executableElement.getSimpleName().toString();
+            resultValues.put(name, annotationValue);
+        }
+        return resultValues;
     }
 
     public static boolean isFieldPrimitive(VariableElement field) {

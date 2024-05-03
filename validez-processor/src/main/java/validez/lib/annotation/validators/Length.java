@@ -1,63 +1,65 @@
 package validez.lib.annotation.validators;
 
+import validez.lib.annotation.internal.Consumes;
+
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * One of the in-box validator, used for check what string in specified length.
- * Also, can be used with Number objects for check it value bounds or equality
+ * One of the in-box validator, used for check what string or CharSequence in specified length.
  * <br>
  * Usage examples:
  *
  * <pre>{@code
  *
- * //check if number > 3
+ * //check if string.length() > 3
  * @Length(min = 3)
- * private int number;
+ * private String string;
  *
- * //check if number < 32
+ * //check if string.length() < 32
  * @Length(max = 32)
- * private int number;
+ * private String string;
  *
- * //check if number > 3 and < 99
+ * //check if string.length() > 3 and < 99
  * @Length(min = 3, max = 99)
- * private int number;
+ * private String string;
  *
- * //check if number = 12
+ * //check if string.length() = 12
  * @Length(equals = 12)
- * private int number;
+ * private String string;
  *
  * }</pre>
- *
- * For strings, behaviour will be same the difference is that the comparison will be made over
- * the value that the string returns as a result of the call String#lenght() on it
  */
 @Target(ElementType.FIELD)
+@Consumes(CharSequence.class)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface Length {
 
     /**
      *
-     * @return lower bound for length
+     * @return Lower bound for length
      */
-    long min() default Long.MIN_VALUE;
+    int min() default Integer.MIN_VALUE;
 
     /**
      *
-     * @return upper bound for length
+     * @return Upper bound for length
      */
-    long max() default Long.MAX_VALUE;
+    int max() default Integer.MAX_VALUE;
 
     /**
-     * If used, then min and max conditions will be ignored
-     * @return equality value
+     * @return Equals bound for value
+     * @apiNote if used, when {@link Length#max()} and {@link Length#min()} will be ignored
      */
-    long equals() default Long.MIN_VALUE;
+    int equals() default Integer.MIN_VALUE;
 
     /**
-     * specifies what to do if field value equals null
+     * Define strategy which must be used, when field type is not primitive and its value = null
      * @see NullValueStrategy
-     * @return null value strategy
+     * @return null value handling strategy
      */
-    NullValueStrategy nullStrategy() default NullValueStrategy.NULL_ALLOWED;
+    NullValueStrategy nullValueStrategy() default NullValueStrategy.NULL_NOT_ALLOWED;
 
 }

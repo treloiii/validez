@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import validez.lib.annotation.Validate;
 import validez.lib.annotation.conditions.Exclude;
 import validez.lib.annotation.conditions.Partial;
+import validez.lib.annotation.validators.IntBound;
 import validez.lib.annotation.validators.IntRange;
 import validez.lib.annotation.validators.Length;
 import validez.lib.annotation.validators.LongRange;
@@ -32,9 +33,9 @@ public class PersonInformation {
     @Length(equals = 16)
     private String inn;
     @NotEmpty
-    @Length(min = 18, max = 64)
+    @IntBound(min = 18, max = 64)
     private Integer age;
-    @Length(min = 1982, max = 2016)
+    @IntBound(min = 1982, max = 2016)
     private int born;
     @NotEmpty
     private List<PersonInformation> children;

@@ -67,7 +67,7 @@ class CustomValidatedDtoTest {
         ValidatorContext intField = handledInvariant.get("intField");
         Object intFieldValue = intField.getFieldValue();
         assertEquals(12, (Integer) intFieldValue);
-        String nullOrEqualsName = intField.getName();
+        String nullOrEqualsName = intField.getFieldName();
         assertEquals("intField", nullOrEqualsName);
         Class<? extends Annotation> nullOrEquals = intField.getAnnotationClass();
         assertEquals(NullOrEquals.class, nullOrEquals);
@@ -81,7 +81,7 @@ class CustomValidatedDtoTest {
 
         ValidatorContext stringVal = handledInvariant.get("stringVal");
         assertEquals(stringValValue, stringVal.getFieldValue());
-        assertEquals("stringVal", stringVal.getName());
+        assertEquals("stringVal", stringVal.getFieldName());
         assertNull(stringVal.getProperty());
         assertEquals(NotEmpty.class, stringVal.getAnnotationClass());
 
@@ -158,7 +158,7 @@ class CustomValidatedDtoTest {
         assertNull(handledInvariant);
 
         assertNull(handledContext.getFieldValue());
-        assertEquals("stringVal2", handledContext.getName());
+        assertEquals("stringVal2", handledContext.getFieldName());
         assertNull(handledContext.getProperty());
         assertEquals(NotNull.class, handledContext.getAnnotationClass());
     }

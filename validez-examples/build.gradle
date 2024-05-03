@@ -4,8 +4,6 @@ plugins {
 
 dependencies {
 
-//    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-
     compileOnly 'org.projectlombok:lombok:1.18.32'
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     testCompileOnly 'org.projectlombok:lombok:1.18.32'

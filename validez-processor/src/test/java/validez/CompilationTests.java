@@ -92,4 +92,72 @@ class CompilationTests {
         assertThat(compilation).succeeded();
     }
 
+    @Test
+    void allDefaultValidatorsCompiles() {
+        Compilation compilation = javac()
+                .withProcessors(new ValidatorProcessor())
+                .compile(
+                        JavaFileObjects.forResource("AllDefaultValidatorsCompile.java")
+                );
+        compilation.generatedFiles();
+        assertThat(compilation).succeeded();
+    }
+
+    @Test
+    void allDefaultValidatorsWithInvariantCompiles() {
+        Compilation compilation = javac()
+                .withProcessors(new ValidatorProcessor())
+                .compile(
+                        JavaFileObjects.forResource("AllDefaultValidatorsWithInvariant.java")
+                );
+        assertThat(compilation).succeeded();
+    }
+
+    @Test
+    void notFailingNoValidatorsFields() {
+        Compilation compilation = javac()
+                .withProcessors(new ValidatorProcessor())
+                .compile(
+                        JavaFileObjects.forResource("NotFailingNoValidatorsFields.java")
+                );
+        assertThat(compilation).succeeded();
+    }
+
+    @Test
+    void excludeNotFailing() {
+        Compilation compilation = javac()
+                .withProcessors(new ValidatorProcessor())
+                .compile(
+                        JavaFileObjects.forResource("ExcludeNotFailing.java"),
+                        JavaFileObjects.forResource("NotFailingNoValidatorsFields.java")
+                );
+        assertThat(compilation).succeeded();
+    }
+
+    public static Stream<Arguments> incorrectConsumesSource() {
+        return Stream.of(
+                Arguments.of("ByteBoundAppliedNotToByte.java", "@ByteBound can be placed only on Byte value types or it subtypes"),
+                Arguments.of("ShortBoundAppliedNotToShort.java", "@ShortBound can be placed only on Short value types or it subtypes"),
+                Arguments.of("IntBoundAppliedNotToInteger.java", "@IntBound can be placed only on Integer value types or it subtypes"),
+                Arguments.of("LongBoundAppliedNotToLong.java", "@LongBound can be placed only on Long value types or it subtypes"),
+                Arguments.of("IntRangeAppliedNotToInt.java", "@IntRange can be placed only on Integer value types or it subtypes"),
+                Arguments.of("LongRangeAppliedNotToLong.java", "@LongRange can be placed only on Long value types or it subtypes"),
+                Arguments.of("StringRangeAppliedNotToString.java", "@StringRange can be placed only on String value types or it subtypes"),
+                Arguments.of("LengthAppliedNotToCharSequence.java", "@Length can be placed only on CharSequence value types or it subtypes")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("incorrectConsumesSource")
+    void incorrectConsumesTest(String resource, String error) {
+        Compilation compilation = javac()
+                .withProcessors(new ValidatorProcessor())
+                .compile(
+                        JavaFileObjects.forResource(resource)
+                );
+        assertThat(compilation).failed();
+        assertThat(compilation)
+                .hadErrorContaining(error);
+    }
+
 }

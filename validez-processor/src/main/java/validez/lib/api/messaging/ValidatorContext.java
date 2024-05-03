@@ -19,7 +19,7 @@ public class ValidatorContext {
     /**
      * Not valid field name
      */
-    private final String name;
+    private final String fieldName;
     /**
      * Annotation class which trigger validation.
      * Will be null, if invalid field type is marked as {@link validez.lib.annotation.Validate}
@@ -49,18 +49,18 @@ public class ValidatorContext {
     @Nullable
     private final Exception cause;
 
-    public ValidatorContext(String name, @Nullable Class<? extends Annotation> annotationClass,
+    public ValidatorContext(String fieldName, @Nullable Class<? extends Annotation> annotationClass,
                             @Nullable String property, @Nullable Object fieldValue,
                             @Nullable Exception cause) {
-        this.name = name;
+        this.fieldName = fieldName;
         this.annotationClass = annotationClass;
         this.property = property;
         this.fieldValue = fieldValue;
         this.cause = cause;
     }
 
-    public String getName() {
-        return name;
+    public String getFieldName() {
+        return fieldName;
     }
 
     @Nullable
@@ -86,7 +86,7 @@ public class ValidatorContext {
     @Override
     public String toString() {
         return "ValidatorContext{" +
-                "name='" + name + '\'' +
+                "name='" + fieldName + '\'' +
                 ", annotationClass=" + annotationClass +
                 ", property='" + property + '\'' +
                 ", fieldValue=" + fieldValue +

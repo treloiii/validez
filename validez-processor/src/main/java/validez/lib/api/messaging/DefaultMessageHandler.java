@@ -39,7 +39,7 @@ public class DefaultMessageHandler implements MessageHandler {
         }
         String pattern = PATTERNS.get(annotation);
         if (pattern == null) {
-            return "%s is invalid by %s".formatted(fieldName, context.getName());
+            return "%s is invalid by %s".formatted(fieldName, context.getFieldName());
         }
         return pattern.formatted(fieldName);
     }

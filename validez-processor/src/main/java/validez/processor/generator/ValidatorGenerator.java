@@ -14,20 +14,28 @@ import validez.lib.annotation.conditions.Fields;
 import validez.lib.annotation.conditions.Invariant;
 import validez.lib.annotation.conditions.Invariants;
 import validez.lib.annotation.messaging.ModifyMessage;
+import validez.lib.annotation.validators.ByteBound;
+import validez.lib.annotation.validators.IntBound;
 import validez.lib.annotation.validators.IntRange;
 import validez.lib.annotation.validators.Length;
+import validez.lib.annotation.validators.LongBound;
 import validez.lib.annotation.validators.LongRange;
 import validez.lib.annotation.validators.NotEmpty;
 import validez.lib.annotation.validators.NotNull;
+import validez.lib.annotation.validators.ShortBound;
 import validez.lib.annotation.validators.StringRange;
 import validez.lib.api.messaging.DefaultMessageHandler;
 import validez.lib.api.messaging.ValidatorContext;
+import validez.processor.generator.fields.ByteBoundValidator;
 import validez.processor.generator.fields.FieldValidator;
+import validez.processor.generator.fields.IntBoundValidator;
 import validez.processor.generator.fields.IntRangeValidator;
 import validez.processor.generator.fields.LengthValidator;
+import validez.processor.generator.fields.LongBoundValidator;
 import validez.processor.generator.fields.LongRangeValidator;
 import validez.processor.generator.fields.NotEmptyValidator;
 import validez.processor.generator.fields.NotNullValidator;
+import validez.processor.generator.fields.ShortBoundValidator;
 import validez.processor.generator.fields.StringRangeValidator;
 import validez.processor.generator.fields.external.ExternalAnnotationValidator;
 import validez.processor.generator.fields.external.ExternalDefinedAnnotationValidator;
@@ -84,10 +92,14 @@ public class ValidatorGenerator {
         basicValidators = Map.of(
                 Length.class, new LengthValidator(processingEnvironment),
                 NotEmpty.class, new NotEmptyValidator(processingEnvironment),
-                StringRange.class, new StringRangeValidator(),
-                LongRange.class, new LongRangeValidator(),
-                IntRange.class, new IntRangeValidator(),
-                NotNull.class, new NotNullValidator()
+                StringRange.class, new StringRangeValidator(processingEnvironment),
+                LongRange.class, new LongRangeValidator(processingEnvironment),
+                IntRange.class, new IntRangeValidator(processingEnvironment),
+                NotNull.class, new NotNullValidator(),
+                IntBound.class, new IntBoundValidator(processingEnvironment),
+                LongBound.class, new LongBoundValidator(processingEnvironment),
+                ShortBound.class, new ShortBoundValidator(processingEnvironment),
+                ByteBound.class, new ByteBoundValidator(processingEnvironment)
         );
         this.registeredPropertyValidators = registeredPropertyValidators;
         this.externalValidator = new ExternalDefinedAnnotationValidator(processingEnv);
@@ -226,6 +238,7 @@ public class ValidatorGenerator {
         VariableElement variableElement = field.getField();
         Name fieldName = variableElement.getSimpleName();
         TypeName validatedObjectClass = TypeName.get(validateClass.asType());
+        TypeName stringSetType = ParameterizedTypeName.get(Set.class, String.class);
         return MethodSpec.methodBuilder("validate$" + fieldName)
                 .addModifiers(Modifier.PRIVATE)
                 .returns(ClassName.get(ValidatorContext.class))
@@ -234,11 +247,11 @@ public class ValidatorGenerator {
                                 .build()
                 )
                 .addParameter(
-                        ParameterSpec.builder(ClassName.get(Set.class), VALIDATE_ARGS.getIncludesName())
+                        ParameterSpec.builder(stringSetType, VALIDATE_ARGS.getIncludesName())
                                 .build()
                 )
                 .addParameter(
-                        ParameterSpec.builder(ClassName.get(Set.class), VALIDATE_ARGS.getExcludesName())
+                        ParameterSpec.builder(stringSetType, VALIDATE_ARGS.getExcludesName())
                                 .build()
                 )
                 .addCode(field.createCode(VALIDATE_ARGS))

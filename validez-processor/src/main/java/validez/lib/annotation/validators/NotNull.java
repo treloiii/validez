@@ -1,5 +1,7 @@
 package validez.lib.annotation.validators;
 
+import validez.lib.annotation.internal.Consumes;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
@@ -16,5 +18,6 @@ import java.lang.annotation.Target;
  * Will be ignored if used with primitive type
  */
 @Target(ElementType.FIELD)
+@Consumes(Object.class)
 public @interface NotNull {
 }
