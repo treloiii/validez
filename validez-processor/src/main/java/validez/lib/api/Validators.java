@@ -1,6 +1,5 @@
 package validez.lib.api;
 
-import validez.lib.annotation.Validator;
 import validez.lib.exceptions.InvalidException;
 
 import java.util.Collections;

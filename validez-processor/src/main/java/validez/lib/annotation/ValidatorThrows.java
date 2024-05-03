@@ -1,5 +1,7 @@
 package validez.lib.annotation;
 
+import validez.lib.api.Validator;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 

@@ -1,11 +1,13 @@
 package validez.lib.api.messaging;
 
+import validez.lib.api.Validator;
+
 import javax.annotation.Nonnull;
 import java.util.Map;
 
 /**
  * Interface provide API for handling exception messages,
- * which will be thrown during validation by {@link validez.lib.annotation.Validator}
+ * which will be thrown during validation by {@link Validator}
  * <br>
  * Implementation class must be declared through
  * {@link validez.lib.annotation.messaging.ModifyMessage} annotation API.
@@ -36,7 +38,7 @@ public interface MessageHandler {
     String handleInvariant(@Nonnull String invariantName, @Nonnull Map<String, ValidatorContext> membersContext);
 
     /**
-     * Method will be called, if passed to validator {@link validez.lib.annotation.Validator} object is null
+     * Method will be called, if passed to validator {@link Validator} object is null
      * @return message for exception
      */
     String handleNull();
