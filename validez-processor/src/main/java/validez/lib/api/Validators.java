@@ -86,7 +86,7 @@ public class Validators {
      * @throws InvalidException default exception if specified not provided
      * @throws NullPointerException if target is null
      */
-    public static <T> void validateOnly(T target, String... includes) throws InvalidException {
+    public static <T> void validateIncludes(T target, String... includes) throws InvalidException {
         checkNull(target, "target");
         Validator<T, InvalidException> validator = (Validator<T, InvalidException>)
                 forClass(target.getClass(), InvalidException.class);
@@ -102,7 +102,7 @@ public class Validators {
      * @throws InvalidException default exception if specified not provided
      * @throws NullPointerException if target is null
      */
-    public static <T> void validateWithout(T target, String... excludes) throws InvalidException {
+    public static <T> void validateExcludes(T target, String... excludes) throws InvalidException {
         checkNull(target, "target");
         Validator<T, InvalidException> validator = (Validator<T, InvalidException>)
                 forClass(target.getClass(), InvalidException.class);

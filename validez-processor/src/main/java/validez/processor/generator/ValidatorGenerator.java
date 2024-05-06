@@ -213,7 +213,7 @@ public class ValidatorGenerator {
                     CodeBlock.builder()
                             .add(validateFieldStatement(contextName, validateFieldMethod))
                             .beginControlFlow("if ($N != null)", contextName)
-                            .add(throwWithContext(fieldName, contextName, VALIDATE_ARGS))
+                            .add(throwWithContext(contextName, VALIDATE_ARGS))
                             .endControlFlow()
                             .build()
             );

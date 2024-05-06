@@ -12,8 +12,9 @@ public class CustomMessageHandler implements MessageHandler {
     public static Map<String, ValidatorContext> handledInvariant;
 
     @Override
-    public String handle(String fieldName, ValidatorContext context) {
+    public String handle(ValidatorContext context) {
         handledContext = context;
+        String fieldName = context.getFieldName();
         return "%s field name not valid, %s value = ".formatted(fieldName, fieldName)
                 + context.getFieldValue();
     }

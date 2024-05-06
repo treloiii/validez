@@ -18,16 +18,15 @@ import java.util.Map;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CodeUtils {
 
-    public static CodeBlock throwWithContext(Name fieldName, String contextName, ValidatorArgs args) {
+    public static CodeBlock throwWithContext(String contextName, ValidatorArgs args) {
         Map<String, Object> named = new LinkedHashMap<>();
-        named.put("field", fieldName);
         named.put("exception", ConfigProvider.getExceptionClass());
         named.put("handler", args.getMessageHandlerName());
         named.put("context", contextName);
         return CodeBlock.builder()
                 .addStatement(
                         CodeBlock.builder()
-                                .addNamed("throw new $exception:T($handler:N.handle($field:S, $context:L))", named)
+                                .addNamed("throw new $exception:T($handler:N.handle($context:L))", named)
                                 .build()
                 )
                 .build();

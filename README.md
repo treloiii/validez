@@ -116,6 +116,262 @@ public void validatePersonalInformation(PersonalInformation personalInformation)
 ```
 In internals, `Validators` will extract validator for target object and call `validate` method.
 
+### Validating composite objects
+
+Composite objects will be validated by default, if type of this object also marked with
+`@Validate`.
+To validate composite object, validator will try to find validator for it type
+and invoke validate method for it.
+
+For example, lets add to `PersonalInformation` class field spouse of the same type:
+
+```java
+package example;
+
+import validez.lib.annotation.Validate;
+
+@Validate
+public class PersonalInformation {
+    
+    //...previous fields
+
+    private PersonalInformation spouse;
+    
+    //getters/setters etc.
+}
+```
+Now, validator will validate spouse field, because it's type `PersonalInformation` marked with `@Validate`.
+All other types, which are not `@Validate` will be ignored.  
+To change this behaviour, if you don't want to validate such fields, you can mark them with `validez.lib.annotation.conditions.Exclude`:
+
+```java
+package example;
+
+import validez.lib.annotation.Validate;
+import validez.lib.annotation.conditions.Exclude;
+
+@Validate
+public class PersonalInformation {
+    
+    //...previous fields
+
+    @Exclude
+    private PersonalInformation spouse;
+    
+    //getters/setters etc.
+}
+```
+Now, this field is no longer a part of validation process.
+
+### Partial validation
+
+In some cases needs validate not all object, only several fields. For example, our application used big DTO
+for processing many http requests, and not all fields used in every request, but they marked with some validator.
+For this, `validez.lib.api.Validator` interface provide two more methods `validateIncludes` and `validateExcludes`.
+
+These methods have additional argument of type `java.util.Set<String>`, to provide field names,
+which must be excluded or exclusively added to validation.  
+If you want to exclude fields from validation, use `validateExcludes`, if you want to use in validation only specified fields,
+use `validateIncludes`.
+
+For example, we want to validate PersonalInformation in one process only with age, and in another, with all fields except of phoneNumber:
+
+```java
+import example.PersonalInformationValidatorImpl;
+import validez.lib.api.Validator;
+import validez.lib.exceptions.InvalidException;
+import java.util.Set;
+
+public void validatePersonalInformation(PersonalInformation personalInformation)
+        throws InvalidException {
+    Validator<PersonalInformation, InvalidException> validator = new PersonalInformationValidatorImpl();
+    //validate only age
+    validator.validateIncludes(personalInformation, Set.of("age"));
+    //validate all, except of phoneNumber
+    validator.validateExcludes(personalInformation, Set.of("phoneNumber"));
+}
+```
+
+Also, it can be achieved using `Validators`, only difference,
+is that consumes varargs for field names, for more convenience:
+
+```java
+import validez.lib.api.Validators;
+import validez.lib.exceptions.InvalidException;
+
+public void validatePersonalInformation(PersonalInformation personalInformation)
+        throws InvalidException {
+    //validate only age
+    Validators.validateIncludes(personalInformation, "age");
+    //validate all, except of phoneNumber
+    Validators.validateExcludes(personalInformation, "phoneNumber");
+}
+```
+
+As well, if some composite object field need to be excluded/included,
+there is `validez.lib.annotation.conditions.Partial` annotation, to declare it in DTO.
+
+```java
+
+package example;
+
+import validez.lib.annotation.Validate;
+import validez.lib.annotation.conditions.Partial;
+
+@Validate
+public class PersonalInformation {
+    
+    //...previous fields
+
+    @Partial(includes = "age")
+    private PersonalInformation spouse;
+    @Partial(excludes = "phoneNumber")
+    private PersonalInformation exSpouse;
+    
+    //getters/setters etc.
+}
+
+```
+
+For now, there is no API for dynamic exclude/include fields from composite objects. 
+There is one workaround - exclude composite objects, and invoke validators for each. 
+
+### Invariant's concept
+
+What if we need to define some condition, there some field or fields are valid if invalid other, in the indicated order.
+For example, let's create new DTO class, called `PaymentInformation`:
+
+```java
+package test;
+
+import validez.lib.annotation.Validate;
+import validez.lib.annotation.validators.Length;
+import validez.lib.annotation.validators.NotNull;
+
+import java.math.BigDecimal;
+
+@Validate
+public class PaymentInformation {
+
+    @Length(equals = 24)
+    private String recipientAccountNumber;
+    @Length(equals = 11)
+    private String recipientPhoneNumber;
+    @Length(min = 3, max = 64)
+    private String recipientName;
+
+    @Length(min = 32)
+    private String qrCode;
+    @Length(equals = 128)
+    private String token;
+
+    @NotNull
+    private BigDecimal amount;
+    //getters, setters, etc.
+}
+```
+
+There is some abstract information about money transaction which describes:
+* recipient account number
+* recipient phone number
+* recipient name
+* transaction qr code
+* transaction token
+* transaction amount
+
+We want to define 'business' relations between fields and make this relation used in validation:
+
+1. When `recipientAccountNumber` is invalid, then try to validate `recipientPhoneNumber` and `recipientName`
+or fail
+2. When `qrCode` is invalid, then try to validate `token`
+
+Let's give it names:
+1. paymentType: defines type of payment - by account number or by phone + name
+2. paymentMethod: defines method which used for creating transaction - qr code or token
+
+Basic usage can provide to us only validating each field separately, for doing this type of validation,
+we need to define invariants:
+
+```java
+package test;
+
+import validez.lib.annotation.Validate;
+import validez.lib.annotation.validators.Length;
+import validez.lib.annotation.validators.NotNull;
+import validez.lib.annotation.conditions.Invariant;
+import validez.lib.annotation.conditions.Fields;
+
+import java.math.BigDecimal;
+
+@Validate
+@Invariant(name = "paymentType", members = { //1
+        @Fields("recipientAccountNumber"), //2
+        @Fields({"recipientPhoneNumber", "recipientName"}) //3
+})
+@Invariant(name = "paymentMethod", members = { //4
+        @Fields("qrCode"),
+        @Fields("token")
+})
+public class PaymentInformation {
+
+    @Length(equals = 24)
+    private String recipientAccountNumber;
+    @Length(equals = 11)
+    private String recipientPhoneNumber;
+    @Length(min = 3, max = 64)
+    private String recipientName;
+
+    @Length(min = 32)
+    private String qrCode;
+    @Length(equals = 128)
+    private String token;
+
+    @NotNull
+    private BigDecimal amount;
+    //getters, setters, etc.
+}
+```
+Let's describe this code:
+1. Declaring invariant named paymentType, provide members of this invariant
+2. List member which contains `recipientAccountNumber` field using `validez.lib.annotation.conditions.Fields` annotation
+3. List member which contains fields `recipientPhoneNumber` and `recipientName`
+4. Declaring invariant `paymentMethod` with members of fields `qrCode` and `token`
+
+Each invariant will be validated using members fields, in declared order, 
+between all member fields will be OR condition for validation,
+remembering our task, we need:
+* validate `recipientAccountNumber` if it is invalid - validate `recipientPhoneNumber` and `recipientName`
+* validate `qrCode` if it is invalid - validate `token`
+
+That's exactly what the invariant does. Describing this declaration, generated code will provide something like:
+
+```java
+
+public void validate(PaymentInformation paymentInformation) {
+    String recipientAccountNumber = paymentInformation.getRecipientAccountNumber();
+    boolean recipientAccountNumberValid = recipientAccountNumber != null && recipientAccountNumber.lenght() != 24;
+    if (recipientAccountNumberValid) {
+        String recipientPhoneNumber = paymentInformation.getRecipientPhoneNumber();
+        String recipientName = paymentInformation.getRecipientName();
+        boolean recipientPhoneNumberValid = recipientPhoneNumber != null && recipientPhoneNumber.length() == 11;
+        boolean recipientNameValid = recipientName != null && recipientName.length() > 3 && recipientName.length() < 64;
+        if (!recipientPhoneNumberValid || !recipientNameValid) {
+            //throw invalid exception
+        }
+    }
+    String qrCode = paymentInformation.getQrCode();
+    boolean qrCodeValid = qrCode != null && qrCode.length() > 32;
+    if (!qrCodeValid) {
+        String token = paymentInformation.getToken();
+        boolean tokenValid = token != null && token.length() == 128;
+        if (!tokenValid) {
+            //throw invalid exception
+        }
+    }
+    //validate non-variant fields
+}
+```
+
 ### Overriding exceptions
 By default, every generated validator will throw `validez.lib.exceptions.InvalidException`.  
 In some cases may be useful to throw application or process specific exception by validator.
@@ -147,4 +403,95 @@ This approaches can be used together, if declared `@ValidatorThrows` and `valide
 annotation processor will use exception from `@ValidatorThrows`.
 
 ### Modifying exceptions messages
+
+There are also cases when we need to define which field of DTO is invalid and why,
+and produce clear message about this case.
+
+For previous example: when age is less than 18, we want to throw exception
+with message: `age must be greater than 18`. It will be helpful when calling system
+knows where is they request are invalid.  
+To do this, just use annotation `validez.lib.annotation.messaging.ModifyMessage`.  
+This used for declaring message handler on class, which will intercept all cases where field is invalid,
+and produce String message for future exception.
+
+Every handler must implement interface `validez.lib.api.messaging.MessageHandler`
+
+MessageHandler interface has 3 methods for handling:
+1. Invalid field;
+2. Invalid invariant
+3. Null referenced object
+
+First create handler:
+
+```java
+package example;
+
+import validez.lib.api.messaging.MessageHandler;
+import validez.lib.api.messaging.ValidatorContext;
+import java.util.Map;
+
+public class PersonalInformationMessageHandler implements
+        MessageHandler {
+    
+    @Override
+    public String handle(ValidatorContext context) {
+        //handle invalid field using context
+    }
+
+    @Override
+    public String handleInvariant(String invariantName, Map<String, ValidatorContext> membersContext) {
+        //handle invalid invariant using context of all invalid members
+    }
+    
+    @Override
+    public String handleNull() {
+        //handle null object passed to validator
+    }
+}
+```
+
+Every handler method has `ValidatorContext` parameter (except of handleNull),
+which store information about invalid field:
+* Field name
+* Validator annotation class which failed
+* Validator annotation property which failed
+* Actual field value
+* Exception from invalid sub-object
+
+Now, add code to handle 18 age person message to handle method:
+
+```java
+public String handle(ValidatorContext context) {
+    String fieldName = context.getFieldName();
+    Object fieldValueRaw = context.getFieldValue();
+    if ("age".equals(fieldName)) {
+        return "Person age must be greater than 18, actual age is: " + fieldValueRaw;
+    }
+    return "default case";
+}
+```
+
+Next, declare handler on class: 
+```java
+package example;
+
+import validez.lib.annotation.Validate;
+import validez.lib.annotation.messaging.ModifyMessage;
+
+@Validate
+@ModifyMessage(PersonalInformationMessageHandler.class)
+public class PersonalInformation {
+    //fields, getters/setters etc.
+}
+```
+When invariant invalid, then `handleInvariant` method will be called from validator, so to handle message for
+invalid invariant use handleInvariant in similar way. The only difference to `handle` method is that invariant
+name passed as first argument, and second argument it is map of all fields that are invalid in this invariant.
+
+`handleNull` method will be invoked, when passed object is null, so if we try to validate null object, 
+this method will be used to modify exception message.
+
+Then no message handlers explicitly defined, when `validez.lib.api.messaging.DefaultMessageHandler` will be used.
+
+
 
