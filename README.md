@@ -116,6 +116,9 @@ public void validatePersonalInformation(PersonalInformation personalInformation)
 ```
 In internals, `Validators` will extract validator for target object and call `validate` method.
 
+All available validators can be founded in `validez.lib.annotation.validators` package
+with all required documentation.
+
 ### Validating composite objects
 
 Composite objects will be validated by default, if type of this object also marked with
@@ -394,6 +397,9 @@ Now, generated validator method `validate` will throw `IllegalArgumentException`
 This annotation API supports any Exception, checked or unchecked, 
 which has constructor with one String parameter.
 
+Also, using `validez.lib.api.Validators` class API you can validate objects with custom exceptions,
+it has overrides with type argument, that represents user-defined exceptions.
+
 Also, in some cases will be useful to make all validators throw one exception in all project. 
 For remove boilerplate annotating every DTO classes with `@ValidatorThrows` you can create in root of project
 file named `validez.properties`, and declare property `validator.exception`. 
@@ -493,5 +499,84 @@ this method will be used to modify exception message.
 
 Then no message handlers explicitly defined, when `validez.lib.api.messaging.DefaultMessageHandler` will be used.
 
+### Custom validators
 
+If no one of default validators suitable for yours case, you can create your own validator,
+which will be integrated into generated code.
 
+For example, we want to validate string fields, 
+by condition of its length and specific char position value.
+Let's name this validator, `CharPosition`, and imagine how it will be used in code:
+
+```java
+
+@CharPosition(length = 32, position = 16, value = 'F')
+private String mark;
+```
+
+In our plan, this could check that string length exactly 32 char length,
+and its 16 char equals to 'F'.
+
+Now, lets create annotation:
+
+```java
+package test;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
+
+@Target(ElementType.FIELD)
+public @interface CharPosition {
+    
+    char value();
+    int length();
+    int position();
+}
+```
+
+Then, we need to add functional to this annotation, for this,
+we need to implement `validez.lib.api.external.ExternalValidator` and mark implementor class with
+`validez.lib.annotation.external.Register` annotation, for telling processor, 
+that this class used for implementing validation mechanism.
+
+`ExternalValidator` interface provides one type parameter for annotation class. This parameter used by annotation
+processor for checking if provided on field annotation implement validator, and which of them need to use.
+This interface requires to implement method `validate` with parameters
+`validez.lib.api.external.AnnotationProperties.AnnotationProperties` properties and `Object` property.  
+`AnnotationProperties` parameter provide object which represents annotation and it's values in runtime without using reflection,
+it will be filled in annotation processing time. Property parameter represent value of field, which must be validated.  
+`AnnotationProperties` object has method `getValue` which returns value of annotation property. 
+`AnnotationProperties` object can represent every possible annotation property value, including another annotations, which will be represented as 
+`AnnotationProperties` too.  
+
+Implementation of validator will look like this:
+
+```java
+package test;
+
+import validez.lib.api.external.ExternalValidator;
+import validez.lib.annotation.external.Register;
+import validez.lib.api.external.AnnotationProperties;
+
+@Register
+public class CharPositionExternalValidator implements ExternalValidator<CharPosition> {
+    public boolean validate(AnnotationProperties properties, Object property) {
+        if (!(property instanceof String)) {
+            return false;
+        }
+        String stringValue = (String) property;
+        if (stringValue == null) {
+            return false;
+        }
+        int length = stringValue.length();
+        int lengthFromAnnotation = properties.getValue("length");
+        if (lengthFromAnnotation != length) {
+            return false;
+        }
+        char charValue = properties.getValue("value");
+        int charPosition = properties.getValue("position");
+        return charValue == stringValue.charAt(charPosition);
+    }
+}
+```
+Now, `@CharPosition` annotation can be used on fields of your classes for validating them.

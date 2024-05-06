@@ -16,7 +16,6 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +49,6 @@ public class ExternalDefinedAnnotationValidator implements ExternalAnnotationVal
 
     private CodeBlock parseAnnotationProperties(AnnotationMirror annotation, String propertiesName) {
         Elements elements = processingEnvironment.getElementUtils();
-        Types types = processingEnvironment.getTypeUtils();
         Map<? extends ExecutableElement, ? extends AnnotationValue> values
                 = elements.getElementValuesWithDefaults(annotation);
         CodeBlock.Builder propertiesInit = CodeBlock.builder();
