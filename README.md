@@ -1,7 +1,7 @@
 Validez
 ========
 
-`Validez` is a Java Library for generating validators for DTO objects.
+`Validez` is a Java Library for generating validators for DTO objects using annotation processing.
 
 Remove boilerplate code of writing validation layers for objects, just put several annotations on fields
 that you need to validate in object, and use generated validators with your 
