@@ -6,8 +6,8 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import validez.lib.api.messaging.ValidatorContext;
-import validez.processor.config.ConfigProvider;
+import validez.lib.api.data.ValidationResult;
+import validez.lib.api.data.ValidatorContext;
 import validez.processor.generator.ValidatorArgs;
 
 import javax.lang.model.element.Name;
@@ -18,25 +18,23 @@ import java.util.Map;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CodeUtils {
 
-    public static CodeBlock throwWithContext(String contextName, ValidatorArgs args) {
+    public static CodeBlock returnSingleResult(String contextName) {
         Map<String, Object> named = new LinkedHashMap<>();
-        named.put("exception", ConfigProvider.getExceptionClass());
-        named.put("handler", args.getMessageHandlerName());
+        named.put("validationResult", ValidationResult.class);
         named.put("context", contextName);
         return CodeBlock.builder()
                 .addStatement(
                         CodeBlock.builder()
-                                .addNamed("throw new $exception:T($handler:N.handle($context:L))", named)
+                                .addNamed("return new $validationResult:T(false, $context:L, null)", named)
                                 .build()
                 )
                 .build();
     }
 
-    public static CodeBlock throwWithContextInvariant(String invariantName, ValidatorArgs args,
-                                                      Map<String, String> fieldToContext) {
+    public static CodeBlock returnInvariantResult(String invariantName, ValidatorArgs args,
+                                                  Map<String, String> fieldToContext) {
         Map<String, Object> named = new LinkedHashMap<>();
-        named.put("exception", ConfigProvider.getExceptionClass());
-        named.put("handler", args.getMessageHandlerName());
+        named.put("validationResult", ValidationResult.class);
         named.put("invariant", invariantName);
         String membersContextVar = "$$membersContext";
         named.put("membersContext", membersContextVar);
@@ -57,36 +55,41 @@ public final class CodeUtils {
                 .add(membersPutCodeBuilder.build())
                 .addStatement(
                         CodeBlock.builder()
-                                .addNamed("throw new $exception:T($handler:N.handleInvariant($invariant:S, $membersContext:L))", named)
+                                .addNamed("return new $validationResult:T(false, null, $membersContext:L)", named)
                                 .build()
                 )
                 .build();
     }
 
-    public static CodeBlock returnValidatorContext(Name fieldName,
-                                                   String propertyName,
-                                                   ClassName annotation) {
-        return returnValidatorContext(fieldName, propertyName, annotation, null);
-    }
-
-    public static CodeBlock returnValidatorContext(Name fieldName,
-                                                   String propertyName,
-                                                   ClassName annotation,
-                                                   String caughtException) {
+    public static CodeBlock returnValidatorContextForComplex(Name fieldName,
+                                                             String propertyName,
+                                                             String resultName) {
         Map<String, Object> named = new LinkedHashMap<>();
         named.put("contextClass", ValidatorContext.class);
         named.put("field", fieldName);
-        if (annotation == null) {
-            named.put("annotationClass", null);
-        } else {
-            named.put("annotationClass", annotation + ".class");
-        }
+        named.put("annotationClass", null);
         named.put("annotationName", fieldName);
         named.put("property", propertyName);
-        named.put("caughtException", caughtException);
+        named.put("resultName", resultName);
         return CodeBlock.builder()
                 .addNamed("return new $contextClass:T($annotationName:S, $annotationClass:L," +
-                        " $property:S, $field:L, $caughtException:L)", named)
+                        " $property:S, $field:L, $resultName:L)", named)
+                .build();
+    }
+
+
+    public static CodeBlock returnValidatorContext(Name fieldName,
+                                                   String propertyName,
+                                                   ClassName annotation) {
+        Map<String, Object> named = new LinkedHashMap<>();
+        named.put("contextClass", ValidatorContext.class);
+        named.put("field", fieldName);
+        named.put("annotationClass", annotation + ".class");
+        named.put("annotationName", fieldName);
+        named.put("property", propertyName);
+        return CodeBlock.builder()
+                .addNamed("return new $contextClass:T($annotationName:S, $annotationClass:L," +
+                        " $property:S, $field:L)", named)
                 .build();
     }
 

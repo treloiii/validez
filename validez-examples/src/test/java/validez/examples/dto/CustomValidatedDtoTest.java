@@ -8,12 +8,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import validez.examples.custom.annotations.AllPossibleTypes;
 import validez.examples.custom.annotations.AllPossibleTypesExternalValidator;
 import validez.examples.custom.annotations.NullOrEquals;
-import validez.examples.exceptions.CustomNotValidException;
-import validez.examples.handler.CustomMessageHandler;
 import validez.lib.annotation.validators.NotEmpty;
 import validez.lib.annotation.validators.NotNull;
+import validez.lib.api.data.ValidationResult;
+import validez.lib.api.data.ValidatorContext;
 import validez.lib.api.external.AnnotationProperties;
-import validez.lib.api.messaging.ValidatorContext;
 
 import java.lang.annotation.Annotation;
 import java.util.Map;
@@ -26,16 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CustomValidatedDtoTest {
 
     @BeforeEach
     void nullifyContexts() {
-        CustomMessageHandler.handledContext = null;
-        CustomMessageHandler.handledInvariant = null;
-        CustomMessageHandler.nullHandled = null;
         AllPossibleTypesExternalValidator.properties = null;
         AllPossibleTypesExternalValidator.property = null;
     }
@@ -56,11 +50,11 @@ class CustomValidatedDtoTest {
         dto.setStringVal(stringValValue);
 
         CustomValidatedDtoValidatorImpl validator = new CustomValidatedDtoValidatorImpl();
-        assertThrows(CustomNotValidException.class, () ->
-                validator.validate(dto, null, null));
+        ValidationResult result = validator.validate(dto, null, null);
+        assertFalse(result.isValid());
 
-        ValidatorContext handledContext = CustomMessageHandler.handledContext;
-        Map<String, ValidatorContext> handledInvariant = CustomMessageHandler.handledInvariant;
+        ValidatorContext handledContext = result.getValidatorContext();
+        Map<String, ValidatorContext> handledInvariant = result.getInvariantContext();
         assertNull(handledContext);
         assertNotNull(handledInvariant);
 
@@ -149,11 +143,11 @@ class CustomValidatedDtoTest {
         dto.setIntField(152); //valid
 
         CustomValidatedDtoValidatorImpl validator = new CustomValidatedDtoValidatorImpl();
-        assertThrows(CustomNotValidException.class, () ->
-                validator.validate(dto, null, null));
+        ValidationResult result = validator.validate(dto, null, null);
 
-        ValidatorContext handledContext = CustomMessageHandler.handledContext;
-        Map<String, ValidatorContext> handledInvariant = CustomMessageHandler.handledInvariant;
+        assertFalse(result.isValid());
+        ValidatorContext handledContext = result.getValidatorContext();
+        Map<String, ValidatorContext> handledInvariant = result.getInvariantContext();
         assertNotNull(handledContext);
         assertNull(handledInvariant);
 
@@ -183,8 +177,9 @@ class CustomValidatedDtoTest {
     @Test
     void invalidByNullPointer() {
         CustomValidatedDtoValidatorImpl validator = new CustomValidatedDtoValidatorImpl();
-        assertThrows(CustomNotValidException.class, () ->
-                validator.validate(null, null, null));
-        assertTrue(CustomMessageHandler.nullHandled);
+        ValidationResult result = validator.validate(null, null, null);
+        assertFalse(result.isValid());
+        assertNull(result.getInvariantContext());
+        assertNull(result.getValidatorContext());
     }
 }

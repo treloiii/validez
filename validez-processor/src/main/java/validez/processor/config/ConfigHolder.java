@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+//Represent file based config, currently not used, may be in future
 public class ConfigHolder {
 
     private final Map<String, String> config;

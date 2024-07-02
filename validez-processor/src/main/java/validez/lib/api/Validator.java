@@ -1,6 +1,6 @@
 package validez.lib.api;
 
-import validez.lib.annotation.ValidatorThrows;
+import validez.lib.api.data.ValidationResult;
 
 import javax.annotation.Nullable;
 import java.util.Set;
@@ -11,10 +11,8 @@ import java.util.Set;
  * <pre>{@code new ValidatorImpl().validate(...)}</pre>
  * or by using API from class {@link validez.lib.api.Validators}
  * @param <T> Type for object which should validate
- * @param <E> Type for exception which should throws when object is not valid
- * @see ValidatorThrows
  */
-public interface Validator<T, E extends Exception> {
+public interface Validator<T> {
 
     /**
      * Validation method. Call this method for validate object.
@@ -23,37 +21,37 @@ public interface Validator<T, E extends Exception> {
      *                <br>
      *                 If provided, validation process will use only this fields for validating object
      * @param excludes list of field, which must be excluded from validation process
-     * @throws E when object is not valid
+     * @return result of validation {@link ValidationResult}
      */
-    void validate(T object, @Nullable Set<String> includes, @Nullable Set<String> excludes) throws E;
+    ValidationResult validate(T object, @Nullable Set<String> includes, @Nullable Set<String> excludes);
 
     /**
      * Validation method, which delegates to originally validate with null includes and excludes.
      * @param object object which should validate
-     * @throws E when object is not valid
+     * @return result of validation {@link ValidationResult}
      */
-    default void validate(T object) throws E {
-        this.validate(object, null, null);
+    default ValidationResult validate(T object) {
+        return this.validate(object, null, null);
     }
 
     /**
      * Validation method, which delegates to originally validate with provided includes and null excludes.
      * Use this method for validate only listed in includes fields.
      * @param object object which should validate
-     * @throws E when object is not valid
+     * @return result of validation {@link ValidationResult}
      */
-    default void validateIncludes(T object, Set<String> includes) throws E {
-        this.validate(object, includes, null);
+    default ValidationResult validateIncludes(T object, Set<String> includes) {
+        return this.validate(object, includes, null);
     }
 
     /**
      * Validation method, which delegates to originally validate with null includes and provided excludes.
      * Use this method for validate all fields except of listed in excludes.
      * @param object object which should validate
-     * @throws E when object is not valid
+     * @return result of validation {@link ValidationResult}
      */
-    default void validateExcludes(T object, Set<String> excludes) throws E {
-        this.validate(object, null, excludes);
+    default ValidationResult validateExcludes(T object, Set<String> excludes) {
+        return this.validate(object, null, excludes);
     }
 
 }

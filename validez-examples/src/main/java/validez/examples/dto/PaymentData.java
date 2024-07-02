@@ -4,13 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import validez.examples.exceptions.InvalidPaymentData;
-import validez.examples.handler.CustomMessageHandler;
 import validez.lib.annotation.Validate;
-import validez.lib.annotation.ValidatorThrows;
 import validez.lib.annotation.conditions.Fields;
 import validez.lib.annotation.conditions.Invariant;
-import validez.lib.annotation.messaging.ModifyMessage;
 import validez.lib.annotation.validators.IntRange;
 import validez.lib.annotation.validators.Length;
 import validez.lib.annotation.validators.NotEmpty;
@@ -21,8 +17,6 @@ import validez.lib.annotation.validators.NotNull;
 @NoArgsConstructor
 @Builder
 @Validate
-@ValidatorThrows(InvalidPaymentData.class)
-@ModifyMessage(messageHandler = CustomMessageHandler.class)
 @Invariant(
         name = "recipientInfo",
         members = {

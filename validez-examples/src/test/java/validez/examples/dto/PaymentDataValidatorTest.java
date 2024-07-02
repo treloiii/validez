@@ -4,14 +4,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import validez.examples.exceptions.InvalidPaymentData;
+import validez.lib.api.data.ValidationResult;
 
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static validez.help.TestUtils.stringOfLen;
 
 class PaymentDataValidatorTest {
@@ -43,15 +43,15 @@ class PaymentDataValidatorTest {
     @MethodSource("invalidSource")
     void objectInvalid(PaymentData paymentData) {
         PaymentDataValidatorImpl validator = new PaymentDataValidatorImpl();
-        assertThrows(InvalidPaymentData.class,
-                () -> validator.validate(paymentData, null, null));
+        ValidationResult result = validator.validate(paymentData, null, null);
+        assertFalse(result.isValid());
     }
 
     @Test
     void invalidByNullPointer() {
         PaymentDataValidatorImpl validator = new PaymentDataValidatorImpl();
-        assertThrows(InvalidPaymentData.class,
-                () -> validator.validate(null, null, null));
+        ValidationResult result = validator.validate(null, null, null);
+        assertFalse(result.isValid());
     }
 
     public static Stream<Arguments> validSource() {
@@ -147,7 +147,8 @@ class PaymentDataValidatorTest {
     @MethodSource("validSource")
     void objectValid(PaymentData paymentData) {
         PaymentDataValidatorImpl validator = new PaymentDataValidatorImpl();
-        assertDoesNotThrow(() -> validator.validate(paymentData, null, null));
+        ValidationResult result = validator.validate(paymentData, null, null);
+        assertTrue(result.isValid());
     }
 
     private static PaymentData ofTransactionData(String qrCode, String token) {
