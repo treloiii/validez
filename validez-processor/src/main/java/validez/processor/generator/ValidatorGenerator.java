@@ -2,6 +2,7 @@ package validez.processor.generator;
 
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
@@ -59,12 +60,15 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static validez.processor.generator.ValidatorArgs.VALIDATE_ARGS;
@@ -105,17 +109,81 @@ public class ValidatorGenerator {
     public TypeSpec generateValidator(TypeElement validateClass) {
         List<VariableElement> fields = ProcessorUtils.getFields(validateClass);
         List<InvariantHolder> invariants = getInvariants(validateClass);
-        Map<String, ValidField> validFields = filterValidatedFields(fields);
+        Map<String, Set<AnnotationAndValidator>> externalValidatorsPerField = externalValidators(fields);
+        Map<String, ValidField> validFields = filterValidatedFields(fields, externalValidatorsPerField);
         String validatorName = validateClass.getSimpleName().toString() + "ValidatorImpl";
         TypeSpec.Builder generatorBuilder = TypeSpec.classBuilder(validatorName)
                 .addAnnotation(createGenerated(ValidatorGenerator.class))
                 .addModifiers(Modifier.PUBLIC)
+                .addFields(createExternalValidatorsFields(externalValidatorsPerField))
+                .addMethods(createConstructors(externalValidatorsPerField))
                 .addSuperinterface(ParameterizedTypeName.get(
                         ClassName.get(Validator.class),
                         TypeName.get(validateClass.asType())
                 ));
         generatorBuilder.addMethod(getValidateMethod(validFields, invariants, validateClass, generatorBuilder));
         return generatorBuilder.build();
+    }
+
+    private Iterable<MethodSpec> createConstructors(Map<String, Set<AnnotationAndValidator>> externalValidatorsPerField) {
+        if (externalValidatorsPerField.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Iterable<AnnotationAndValidator> validatorMetas = externalValidatorsPerField.values()
+                .stream()
+                .flatMap(Set::stream)
+                .collect(Collectors.toList());
+        List<CodeBlock> allocations = new ArrayList<>();
+        CodeBlock.Builder initializationBuilder = CodeBlock.builder();
+        for (AnnotationAndValidator validatorMeta : validatorMetas) {
+            String memberName = validatorMeta.memberName();
+            initializationBuilder.addStatement("this.$L = $L", memberName, memberName);
+            allocations.add(CodeBlock.of("new $T()", validatorMeta.getExternalValidatorType()));
+        }
+        MethodSpec argConstructor = MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC)
+                .addParameters(
+                        mapExternalValidator(externalValidatorsPerField, this::externalValidatorToParameter)
+                )
+                .addCode(initializationBuilder.build())
+                .build();
+        MethodSpec noArgConstructor = MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC)
+                .addStatement(
+                        CodeBlock.builder()
+                                .add("this(")
+                                .add(CodeBlock.join(allocations, ","))
+                                .add(")")
+                                .build()
+                )
+                .build();
+        return List.of(noArgConstructor, argConstructor);
+    }
+
+    private Iterable<FieldSpec> createExternalValidatorsFields(Map<String, Set<AnnotationAndValidator>> externalValidatorsPerField) {
+        return mapExternalValidator(externalValidatorsPerField, this::externalValidatorToField);
+    }
+
+    private <T> Iterable<T> mapExternalValidator(Map<String, Set<AnnotationAndValidator>> externalValidatorsPerField,
+                                                 Function<AnnotationAndValidator, T> mapper) {
+        return externalValidatorsPerField.values()
+                .stream()
+                .flatMap(Set::stream)
+                .map(mapper)
+                .collect(Collectors.toList());
+    }
+
+    private FieldSpec externalValidatorToField(AnnotationAndValidator validator) {
+        return FieldSpec
+                .builder(TypeName.get(validator.getExternalValidatorType()), validator.memberName(),
+                        Modifier.PRIVATE, Modifier.FINAL)
+                .build();
+    }
+
+    private ParameterSpec externalValidatorToParameter(AnnotationAndValidator validator) {
+        return ParameterSpec
+                .builder(TypeName.get(validator.getExternalValidatorType()), validator.memberName())
+                .build();
     }
 
     private MethodSpec getValidateMethod(Map<String, ValidField> validFields,
@@ -317,7 +385,8 @@ public class ValidatorGenerator {
                 .collect(Collectors.toList());
     }
 
-    private Map<String, ValidField> filterValidatedFields(List<VariableElement> allFields) {
+    private Map<String, ValidField> filterValidatedFields(List<VariableElement> allFields,
+                                                          Map<String, Set<AnnotationAndValidator>> externalValidatorsPerField) {
         Map<String, ValidField> validFields = new LinkedHashMap<>();
         Types types = processingEnv.getTypeUtils();
         Elements elements = processingEnv.getElementUtils();
@@ -326,8 +395,8 @@ public class ValidatorGenerator {
             if (exclude == null) {
                 String fieldName = field.getSimpleName().toString();
                 Map<Annotation, FieldValidator<Annotation>> fieldValidators = getValidatorsFor(field);
-                List<AnnotationAndValidator> externalValidators = getExternalValidatorsFor(field);
-                if (fieldValidators.isEmpty() && externalValidators.isEmpty()) {
+                Set<AnnotationAndValidator> externalValidators = externalValidatorsPerField.get(fieldName);
+                if (fieldValidators.isEmpty() && externalValidators == null) {
                     TypeMirror fieldType = field.asType();
                     TypeKind fieldTypeKind = fieldType.getKind();
                     if (!fieldTypeKind.isPrimitive()) {
@@ -348,12 +417,23 @@ public class ValidatorGenerator {
         return validFields;
     }
 
-    private List<AnnotationAndValidator> getExternalValidatorsFor(VariableElement field) {
+    private Map<String, Set<AnnotationAndValidator>> externalValidators(Collection<VariableElement> fields) {
+        Map<String, Set<AnnotationAndValidator>> externalValidatorsPerField = new HashMap<>();
+        for (VariableElement field : fields) {
+            Set<AnnotationAndValidator> externalValidators = getExternalValidatorsFor(field);
+            if (!externalValidators.isEmpty()) {
+                externalValidatorsPerField.put(field.getSimpleName().toString(), externalValidators);
+            }
+        }
+        return externalValidatorsPerField;
+    }
+
+    private Set<AnnotationAndValidator> getExternalValidatorsFor(VariableElement field) {
         if (registeredPropertyValidators.isEmpty()) {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
         List<? extends AnnotationMirror> fieldAnnotations = field.getAnnotationMirrors();
-        List<AnnotationAndValidator> externalValidators = new ArrayList<>();
+        Set<AnnotationAndValidator> externalValidators = new HashSet<>();
         for (AnnotationMirror fieldAnnotation : fieldAnnotations) {
             DeclaredType annotationType = fieldAnnotation.getAnnotationType();
             TypeMirror validatorType = registeredPropertyValidators.get(annotationType);
