@@ -5,7 +5,6 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 import validez.lib.api.Validators;
 import validez.lib.api.external.ExternalValidator;
-import validez.processor.config.ConfigProvider;
 import validez.processor.generator.ValidatorGenerator;
 import validez.processor.generator.ValidatorsFillerGenerator;
 import validez.processor.utils.ClassWriter;
@@ -30,9 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static validez.processor.config.ConfigProvider.VALIDATOR_EXCEPTION;
-import static validez.processor.utils.ProcessorUtils.parseException;
-
 @SupportedAnnotationTypes({"validez.lib.annotation.Validate", "validez.lib.annotation.external.Register"})
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 @AutoService(Processor.class)
@@ -45,7 +41,6 @@ public class ValidatorProcessor extends AbstractProcessor {
             if (annotations.isEmpty()) {
                 return true;
             }
-            ConfigProvider.init(processingEnv.getFiler());
             ClassWriter classWriter = new ClassWriter(processingEnv);
             Map<String, TypeElement> supportedAnnotations = new HashMap<>();
             for (TypeElement annotation : annotations) {
@@ -71,21 +66,15 @@ public class ValidatorProcessor extends AbstractProcessor {
             Map<TypeElement, JavaFile> validators = new HashMap<>();
             for (Element validateClass : validateClasses) {
                 if (validateClass instanceof TypeElement) {
-                    try {
-                        TypeElement validateClassElement = (TypeElement) validateClass;
-                        boolean hasPackage = classWriter.hasPackage(validateClassElement);
-                        if (!hasPackage) {
-                            String classType = validateClassElement.asType().toString();
-                            throw new RuntimeException("Class %s doesn't have package".formatted(classType));
-                        }
-                        String onClassException = parseException(validateClassElement, elements);
-                        ConfigProvider.override(VALIDATOR_EXCEPTION, onClassException);
-                        TypeSpec validator = generator.generateValidator(validateClassElement);
-                        JavaFile validatorSource = classWriter.writeClass(validator, validateClassElement);
-                        validators.put(validateClassElement, validatorSource);
-                    } finally {
-                        ConfigProvider.clearOverride(VALIDATOR_EXCEPTION);
+                    TypeElement validateClassElement = (TypeElement) validateClass;
+                    boolean hasPackage = classWriter.hasPackage(validateClassElement);
+                    if (!hasPackage) {
+                        String classType = validateClassElement.asType().toString();
+                        throw new RuntimeException("Class %s doesn't have package".formatted(classType));
                     }
+                    TypeSpec validator = generator.generateValidator(validateClassElement);
+                    JavaFile validatorSource = classWriter.writeClass(validator, validateClassElement);
+                    validators.put(validateClassElement, validatorSource);
                 }
             }
             ValidatorsFillerGenerator validatorsFillerGenerator = new ValidatorsFillerGenerator();

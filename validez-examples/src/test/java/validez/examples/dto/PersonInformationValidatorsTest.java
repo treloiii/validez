@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import validez.examples.exceptions.CustomNotValidException;
+import validez.lib.api.data.ValidationResult;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -12,8 +12,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static validez.help.TestUtils.RANDOM;
 import static validez.help.TestUtils.randomFrom;
 import static validez.help.TestUtils.stringOfLen;
@@ -331,15 +331,15 @@ class PersonInformationValidatorsTest {
     @MethodSource("invalidObjectSource")
     void invalidObject(PersonInformation personInformation) {
         PersonInformationValidatorImpl validator = new PersonInformationValidatorImpl();
-        assertThrows(CustomNotValidException.class, () ->
-                validator.validate(personInformation, null, null));
+        ValidationResult result = validator.validate(personInformation, null, null);
+        assertFalse(result.isValid());
     }
 
     @Test
     void invalidByNullPointer() {
         PersonInformationValidatorImpl validator = new PersonInformationValidatorImpl();
-        assertThrows(CustomNotValidException.class, () ->
-                validator.validate(null, null, null));
+        ValidationResult result = validator.validate(null, null, null);
+        assertFalse(result.isValid());
     }
 
     @Test
@@ -386,8 +386,8 @@ class PersonInformationValidatorsTest {
                 .decimalVal(BigDecimal.TEN)
                 .build();
         PersonInformationValidatorImpl validator = new PersonInformationValidatorImpl();
-        assertDoesNotThrow(() ->
-                validator.validate(personInformation, null, null));
+        ValidationResult result = validator.validate(personInformation, null, null);
+        assertTrue(result.isValid());
     }
 
 }

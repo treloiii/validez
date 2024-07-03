@@ -1,4 +1,4 @@
-package validez.lib.api.messaging;
+package validez.lib.api.data;
 
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
@@ -11,8 +11,8 @@ import java.lang.annotation.Annotation;
  *     <li>which annotation is used</li>
  *     <li>which annotation condition not passed</li>
  *     <li>field value</li>
+ *     <li>sub-validation object validation result</li>
  * </ul>
- * Context will be passed into {@link MessageHandler} during exception message creation.
  */
 public class ValidatorContext {
 
@@ -20,6 +20,7 @@ public class ValidatorContext {
      * Not valid field name
      */
     private final String fieldName;
+
     /**
      * Annotation class which trigger validation.
      * Will be null, if invalid field type is marked as {@link validez.lib.annotation.Validate}
@@ -34,6 +35,7 @@ public class ValidatorContext {
      */
     @Nullable
     private final String property;
+
     /**
      * Value of field which is not valid.
      * Will be null, if value not pass not null conditions
@@ -42,21 +44,29 @@ public class ValidatorContext {
     private final Object fieldValue;
 
     /**
-     * Will be filled with exception caught by validating property,
-     * which type marked as {@link validez.lib.annotation.Validate},
-     * otherwise will be null
+     * {@link ValidationResult} result for sub-validation (composite) object validation.
+     * Will be null, if target validation object has not sub-validation objects
      */
     @Nullable
-    private final Exception cause;
+    private final ValidationResult internalResult;
 
     public ValidatorContext(String fieldName, @Nullable Class<? extends Annotation> annotationClass,
-                            @Nullable String property, @Nullable Object fieldValue,
-                            @Nullable Exception cause) {
+                            @Nullable String property, @Nullable Object fieldValue) {
         this.fieldName = fieldName;
         this.annotationClass = annotationClass;
         this.property = property;
         this.fieldValue = fieldValue;
-        this.cause = cause;
+        this.internalResult = null;
+    }
+
+    public ValidatorContext(String fieldName, @Nullable Class<? extends Annotation> annotationClass,
+                            @Nullable String property, @Nullable Object fieldValue,
+                            @Nullable ValidationResult internalResult) {
+        this.fieldName = fieldName;
+        this.annotationClass = annotationClass;
+        this.property = property;
+        this.fieldValue = fieldValue;
+        this.internalResult = internalResult;
     }
 
     public String getFieldName() {
@@ -79,8 +89,8 @@ public class ValidatorContext {
     }
 
     @Nullable
-    public Exception getCause() {
-        return cause;
+    public ValidationResult getInternalResult() {
+        return internalResult;
     }
 
     @Override

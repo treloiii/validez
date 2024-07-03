@@ -1,6 +1,12 @@
 package validez.help;
 
+import validez.lib.api.data.ValidationResult;
+
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestUtils {
 
@@ -24,6 +30,14 @@ public class TestUtils {
     public static <T> T randomFrom(T...values) {
         int index = RANDOM.nextInt(0, values.length);
         return values[index];
+    }
+
+    public static void assertNotValid(Supplier<ValidationResult> resultSupplier) {
+        assertFalse(resultSupplier.get().isValid());
+    }
+
+    public static void assertValid(Supplier<ValidationResult> resultSupplier) {
+        assertTrue(resultSupplier.get().isValid());
     }
 
 }

@@ -4,8 +4,7 @@ Validez
 `Validez` is a Java Library for generating validators for DTO objects using annotation processing.
 
 Remove boilerplate code of writing validation layers for objects, just put several annotations on fields
-that you need to validate in object, and use generated validators with your 
-custom exceptions and exceptions messages.
+that you need to validate in object, and use generated validators.
 
 ### Basic usage
 Here's some DTO object with personal information
@@ -34,23 +33,24 @@ Let's say we want to impose restrictions on the allowed values in the fields of 
 In classic approach to validate this object for our business layer code, we need to write something like this:
 
 ```java
-public void validate(PersonalInformation personalInformation) {
+public boolean validate(PersonalInformation personalInformation) {
     String name = personalInformation.getName();
     if (name.lenght() > 128 || name.length() < 3) {
-        throw new IllegalArgumentException("name not valid");
+        return false;
     }
     String surname = personalInformation.getSurname();
     if (surname.lenght() > 64 || surname.length() < 3) {
-        throw new IllegalArgumentException("surname not valid");
+       return false;
     }
     String phoneNumber = personalInformation.getPhoneNumber();
     if (phoneNumber.lenght() != 11) {
-        throw new IllegalArgumentException("phone number must be 11 symbols len");
+        return false;
     }
     int age = personalInformation.getAge();
     if (age < 18) {
-        throw new IllegalArgumentException("age must be greater than 18");
+        return false;
     }
+    return true;
 }
 ```
 
@@ -88,36 +88,100 @@ To use validator we need to simply allocate it and call `validate` method on it:
 ```java
 import example.PersonalInformationValidatorImpl; //1
 import validez.lib.api.Validator;
-import validez.lib.exceptions.InvalidException;
+import validez.lib.api.data.ValidationResult;
 
-public void validatePersonalInformation(PersonalInformation personalInformation)
-        throws InvalidException { //2
-    Validator<PersonalInformation, InvalidException> validator = new PersonalInformationValidatorImpl(); //3
-    validator.validate(personalInformation);
+public boolean validatePersonalInformation(PersonalInformation personalInformation) {
+    Validator<PersonalInformation> validator = new PersonalInformationValidatorImpl(); //2
+    ValidationResult result = validator.validate(personalInformation);
+    return result.isValid(); //3
 }
 ```
 
 Let's describe marked parts of code:
 
 1. Validator will be generated in the same package as DTO class and its name will be same with ValidatorImpl postfix.
-2. Validator throws `validez.lib.exceptions.InvalidException` by default (this can be overridden) and it is checked exception.
-3. Generated validator implements `validez.lib.api.Validator` interface with 2 type parameters: DTO type and throwing exception type
+2. Generated validator implements `validez.lib.api.Validator` interface with 2 type parameters: DTO type and throwing exception type
+3. Validator returns special object of type `validez.lib.api.data.ValidationResult` which encapsulate validation result
 
 Also, this code can be simplified using `validez.lib.api.Validators` utility class:
 
 ```java
 import validez.lib.api.Validators;
-import validez.lib.exceptions.InvalidException;
+import validez.lib.api.data.ValidationResult;
 
-public void validatePersonalInformation(PersonalInformation personalInformation)
-        throws InvalidException {
-    Validators.validate(personalInformation);
+public boolean validatePersonalInformation(PersonalInformation personalInformation) {
+    ValidationResult result = Validators.validate(personalInformation);
+    return result.isValid();
 }
 ```
 In internals, `Validators` will extract validator for target object and call `validate` method.
 
 All available validators can be founded in `validez.lib.annotation.validators` package
 with all required documentation.
+
+### Validation result object
+
+As mentioned above `validez.lib.api.data.ValidationResult` is a special object for encapsulate result of validation.
+This object has several fields:
+
+- valid - flag, which indicates is validation proceed or not
+- validatorContext - object, which store information about invalid field
+- invariantContext - map of validators context, for represent all invalid invariant fields (invariant concept is described below in doc)
+
+`validatorContext` field has type `validez.lib.api.data.ValidatorContext`, 
+this object used for storing information about invalid field, what can be useful for logging/messaging purposes, 
+and contains following information:
+
+* Field name
+* Validator annotation class which failed
+* Validator annotation property which failed
+* Actual field value
+* `ValidationResult` for invalid sub-object
+
+Everything from this list can have a null value, depending on different situations, see javadoc for more information.
+
+For example let's validate previously created `PersonalInformation` 
+object and process validation result:
+
+```java
+
+public void validate(PersonalInformation personalInformation) {
+    ValidationResult result = Validators.validate(personalInformation);
+    if (result.isValid()) return;
+    ValidatorContext context = result.getValidatorContext();
+    String invalidField = context.getFieldName();
+    if ("name".equals(invalidField)) {
+        String nameValue = context.getFieldValue();
+        if (nameValue == null) {
+            throw new RuntimeException("name must be non-null");
+        }
+        String failedProperty = context.getProperty();
+        if ("max".equals(failedProperty)) {
+            throw new RuntimeException("name cannot be > 128");
+        } else if ("min".equals(failedProperty)) {
+            throw new RuntimeException("name len must be greater than 3");
+        }
+    }
+    //...next field checks
+}
+
+```
+
+Or simple:
+
+```java
+
+public void validate(PersonalInformation personalInformation) {
+    ValidationResult result = Validators.validate(personalInformation);
+    if (result.isValid()) return;
+    ValidatorContext context = result.getValidatorContext();
+    String invalidField = context.getFieldName();
+    throw new RuntimeException("%s is invalid, check API docs for help.".formatted(invalidField));
+}
+
+```
+
+Using `ValidationResult` you may create maximum custom messaging/logging handlers for all needs.
 
 ### Validating composite objects
 
@@ -182,12 +246,10 @@ For example, we want to validate PersonalInformation in one process only with ag
 ```java
 import example.PersonalInformationValidatorImpl;
 import validez.lib.api.Validator;
-import validez.lib.exceptions.InvalidException;
 import java.util.Set;
 
-public void validatePersonalInformation(PersonalInformation personalInformation)
-        throws InvalidException {
-    Validator<PersonalInformation, InvalidException> validator = new PersonalInformationValidatorImpl();
+public void validatePersonalInformation(PersonalInformation personalInformation) {
+    Validator<PersonalInformation> validator = new PersonalInformationValidatorImpl();
     //validate only age
     validator.validateIncludes(personalInformation, Set.of("age"));
     //validate all, except of phoneNumber
@@ -200,10 +262,8 @@ is that consumes varargs for field names, for more convenience:
 
 ```java
 import validez.lib.api.Validators;
-import validez.lib.exceptions.InvalidException;
 
-public void validatePersonalInformation(PersonalInformation personalInformation)
-        throws InvalidException {
+public void validatePersonalInformation(PersonalInformation personalInformation) {
     //validate only age
     Validators.validateIncludes(personalInformation, "age");
     //validate all, except of phoneNumber
@@ -350,7 +410,7 @@ That's exactly what the invariant does. Describing this declaration, generated c
 
 ```java
 
-public void validate(PaymentInformation paymentInformation) {
+public boolean validate(PaymentInformation paymentInformation) {
     String recipientAccountNumber = paymentInformation.getRecipientAccountNumber();
     boolean recipientAccountNumberValid = recipientAccountNumber != null && recipientAccountNumber.lenght() != 24;
     if (recipientAccountNumberValid) {
@@ -359,7 +419,7 @@ public void validate(PaymentInformation paymentInformation) {
         boolean recipientPhoneNumberValid = recipientPhoneNumber != null && recipientPhoneNumber.length() == 11;
         boolean recipientNameValid = recipientName != null && recipientName.length() > 3 && recipientName.length() < 64;
         if (!recipientPhoneNumberValid || !recipientNameValid) {
-            //throw invalid exception
+            return false;
         }
     }
     String qrCode = paymentInformation.getQrCode();
@@ -368,137 +428,15 @@ public void validate(PaymentInformation paymentInformation) {
         String token = paymentInformation.getToken();
         boolean tokenValid = token != null && token.length() == 128;
         if (!tokenValid) {
-            //throw invalid exception
+            return false;
         }
     }
     //validate non-variant fields
+    //...
+    //if all valid
+    return true;
 }
 ```
-
-### Overriding exceptions
-By default, every generated validator will throw `validez.lib.exceptions.InvalidException`.  
-In some cases may be useful to throw application or process specific exception by validator.
-To override default exception you can use annotation `validez.lib.annotation.ValidatorThrows`.  
-Using previous example , let's make it throw `IllegalArgumentException` exception:
-```java
-package example;
-
-import validez.lib.annotation.Validate;
-import validez.lib.annotation.ValidatorThrows;
-
-@Validate
-@ValidatorThrows(IllegalArgumentException.class)
-public class PersonalInformation {
-    //fields, getters/setters etc.
-}
-```
-Now, generated validator method `validate` will throw `IllegalArgumentException`.
-
-This annotation API supports any Exception, checked or unchecked, 
-which has constructor with one String parameter.
-
-Also, using `validez.lib.api.Validators` class API you can validate objects with custom exceptions,
-it has overrides with type argument, that represents user-defined exceptions.
-
-Also, in some cases will be useful to make all validators throw one exception in all project. 
-For remove boilerplate annotating every DTO classes with `@ValidatorThrows` you can create in root of project
-file named `validez.properties`, and declare property `validator.exception`. 
-Value for this property must be canonical name of the exception class.
-
-This approaches can be used together, if declared `@ValidatorThrows` and `validez.properties`
-annotation processor will use exception from `@ValidatorThrows`.
-
-### Modifying exceptions messages
-
-There are also cases when we need to define which field of DTO is invalid and why,
-and produce clear message about this case.
-
-For previous example: when age is less than 18, we want to throw exception
-with message: `age must be greater than 18`. It will be helpful when calling system
-knows where is they request are invalid.  
-To do this, just use annotation `validez.lib.annotation.messaging.ModifyMessage`.  
-This used for declaring message handler on class, which will intercept all cases where field is invalid,
-and produce String message for future exception.
-
-Every handler must implement interface `validez.lib.api.messaging.MessageHandler`
-
-MessageHandler interface has 3 methods for handling:
-1. Invalid field;
-2. Invalid invariant
-3. Null referenced object
-
-First create handler:
-
-```java
-package example;
-
-import validez.lib.api.messaging.MessageHandler;
-import validez.lib.api.messaging.ValidatorContext;
-import java.util.Map;
-
-public class PersonalInformationMessageHandler implements
-        MessageHandler {
-    
-    @Override
-    public String handle(ValidatorContext context) {
-        //handle invalid field using context
-    }
-
-    @Override
-    public String handleInvariant(String invariantName, Map<String, ValidatorContext> membersContext) {
-        //handle invalid invariant using context of all invalid members
-    }
-    
-    @Override
-    public String handleNull() {
-        //handle null object passed to validator
-    }
-}
-```
-
-Every handler method has `ValidatorContext` parameter (except of handleNull),
-which store information about invalid field:
-* Field name
-* Validator annotation class which failed
-* Validator annotation property which failed
-* Actual field value
-* Exception from invalid sub-object
-
-Now, add code to handle 18 age person message to handle method:
-
-```java
-public String handle(ValidatorContext context) {
-    String fieldName = context.getFieldName();
-    Object fieldValueRaw = context.getFieldValue();
-    if ("age".equals(fieldName)) {
-        return "Person age must be greater than 18, actual age is: " + fieldValueRaw;
-    }
-    return "default case";
-}
-```
-
-Next, declare handler on class: 
-```java
-package example;
-
-import validez.lib.annotation.Validate;
-import validez.lib.annotation.messaging.ModifyMessage;
-
-@Validate
-@ModifyMessage(PersonalInformationMessageHandler.class)
-public class PersonalInformation {
-    //fields, getters/setters etc.
-}
-```
-When invariant invalid, then `handleInvariant` method will be called from validator, so to handle message for
-invalid invariant use handleInvariant in similar way. The only difference to `handle` method is that invariant
-name passed as first argument, and second argument it is map of all fields that are invalid in this invariant.
-
-`handleNull` method will be invoked, when passed object is null, so if we try to validate null object, 
-this method will be used to modify exception message.
-
-Then no message handlers explicitly defined, when `validez.lib.api.messaging.DefaultMessageHandler` will be used.
-
 ### Custom validators
 
 If no one of default validators suitable for yours case, you can create your own validator,

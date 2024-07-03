@@ -12,7 +12,6 @@ import validez.lib.annotation.conditions.Exclude;
 import validez.lib.annotation.conditions.Fields;
 import validez.lib.annotation.conditions.Invariant;
 import validez.lib.annotation.conditions.Invariants;
-import validez.lib.annotation.messaging.ModifyMessage;
 import validez.lib.annotation.validators.ByteBound;
 import validez.lib.annotation.validators.IntBound;
 import validez.lib.annotation.validators.IntRange;
@@ -24,8 +23,8 @@ import validez.lib.annotation.validators.NotNull;
 import validez.lib.annotation.validators.ShortBound;
 import validez.lib.annotation.validators.StringRange;
 import validez.lib.api.Validator;
-import validez.lib.api.messaging.DefaultMessageHandler;
-import validez.lib.api.messaging.ValidatorContext;
+import validez.lib.api.data.ValidationResult;
+import validez.lib.api.data.ValidatorContext;
 import validez.processor.generator.fields.ByteBoundValidator;
 import validez.processor.generator.fields.FieldValidator;
 import validez.processor.generator.fields.IntBoundValidator;
@@ -68,12 +67,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static validez.processor.config.ConfigProvider.getExceptionClass;
 import static validez.processor.generator.ValidatorArgs.VALIDATE_ARGS;
-import static validez.processor.utils.CodeUtils.throwWithContext;
-import static validez.processor.utils.CodeUtils.throwWithContextInvariant;
+import static validez.processor.utils.CodeUtils.returnInvariantResult;
+import static validez.processor.utils.CodeUtils.returnSingleResult;
 import static validez.processor.utils.ProcessorUtils.createGenerated;
-import static validez.processor.utils.ProcessorUtils.getAnnotationValue;
 import static validez.processor.utils.ProcessorUtils.getAnnotationsOfType;
 import static validez.processor.utils.ProcessorUtils.getAnnotationsValues;
 import static validez.processor.utils.ProcessorUtils.getAnnotationsValuesFromMirrors;
@@ -115,8 +112,7 @@ public class ValidatorGenerator {
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(
                         ClassName.get(Validator.class),
-                        TypeName.get(validateClass.asType()),
-                        getExceptionClass()
+                        TypeName.get(validateClass.asType())
                 ));
         generatorBuilder.addMethod(getValidateMethod(validFields, invariants, validateClass, generatorBuilder));
         return generatorBuilder.build();
@@ -131,34 +127,17 @@ public class ValidatorGenerator {
         ExecutableElement validateSuperMethod = ProcessorUtils.getMethods(validatorInterface)
                 .get(0);
         Types typeUtils = processingEnv.getTypeUtils();
-        TypeMirror exceptionType = elementUtils.getTypeElement(getExceptionClass().toString())
-                .asType();
         //get type with generic, as example: Validator<SomeObject>
         DeclaredType interfaceWithGeneric = typeUtils.getDeclaredType(
                 validatorInterface,
-                validateClass.asType(),
-                exceptionType
+                validateClass.asType()
         );
         MethodSpec.Builder methodBuilder = MethodSpec.overriding(validateSuperMethod,
                 interfaceWithGeneric, typeUtils);
-        Object handlerClass = getAnnotationValue("messageHandler", ModifyMessage.class,
-                validateClass, elementUtils);
-        ClassName handlerClassName;
-        if (handlerClass != null) {
-            String handlerClassString = handlerClass.toString();
-            handlerClassName = ClassName.bestGuess(handlerClassString);
-        } else {
-            handlerClassName = ClassName.get(DefaultMessageHandler.class);
-        }
-        CodeBlock handlerInitCode = CodeBlock.builder()
-                .addStatement("$T $N = new $T()",
-                        handlerClassName, VALIDATE_ARGS.getMessageHandlerName(), handlerClassName)
-                .build();
-        methodBuilder.addCode(handlerInitCode);
         methodBuilder.addCode(
                 CodeBlock.builder()
                         .beginControlFlow("if ($N == null)", VALIDATE_ARGS.getDelegateName())
-                        .addStatement("throw new $T($N.handleNull())", getExceptionClass(), VALIDATE_ARGS.getMessageHandlerName())
+                        .addStatement("return new $T(false, null, null)", ValidationResult.class)
                         .endControlFlow()
                         .build()
         );
@@ -199,7 +178,7 @@ public class ValidatorGenerator {
                 methodBuilder
                         .beginControlFlow("if ($L)", ifContextCase);
             }
-            methodBuilder.addCode(throwWithContextInvariant(invariantName, VALIDATE_ARGS, fieldToContext));
+            methodBuilder.addCode(returnInvariantResult(invariantName, VALIDATE_ARGS, fieldToContext));
             invariantFields.forEach(_unused -> methodBuilder.endControlFlow());
         }
 
@@ -213,11 +192,14 @@ public class ValidatorGenerator {
                     CodeBlock.builder()
                             .add(validateFieldStatement(contextName, validateFieldMethod))
                             .beginControlFlow("if ($N != null)", contextName)
-                            .add(throwWithContext(contextName, VALIDATE_ARGS))
+                            .add(returnSingleResult(contextName))
                             .endControlFlow()
                             .build()
             );
         }
+        methodBuilder.addStatement(CodeBlock.builder()
+                .add("return new $T(true, null, null)", ValidationResult.class)
+                .build());
         return renameParameters(methodBuilder.build(), VALIDATE_ARGS.args());
     }
 
@@ -255,7 +237,6 @@ public class ValidatorGenerator {
                                 .build()
                 )
                 .addCode(field.createCode(VALIDATE_ARGS))
-                .addException(getExceptionClass())
                 .build();
     }
 
