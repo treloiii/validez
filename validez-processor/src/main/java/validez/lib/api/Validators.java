@@ -2,9 +2,9 @@ package validez.lib.api;
 
 import validez.lib.api.data.ValidationResult;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -19,18 +19,22 @@ public class Validators {
     private Validators() {
     }
 
-    static final Map<Class<?>, Validator<?>> validators = new HashMap<>();
-
-    static {
+    private static <T> Validator<T> loadValidator(Class<T> dtoClass) {
         try {
-            Class.forName("validez.lib.api.ValidatorsFiller");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            Class<Validator<T>> validatorClass = (Class<Validator<T>>)
+                    Class.forName(dtoClass.getCanonicalName() + "ValidatorImpl");
+            Constructor<Validator<T>> constructor = validatorClass.getDeclaredConstructor();
+            return constructor.newInstance();
+        } catch (ClassNotFoundException | InvocationTargetException |
+                 NoSuchMethodException | InstantiationException |
+                 IllegalAccessException e) {
+            throw new RuntimeException("Cannot load and create instance of " +
+                    " validator implementation for" + dtoClass.getName(), e);
         }
     }
 
     /**
-     * Retrieves validator for specified object class
+     * Retrieves new validator for specified object class.
      * @param targetClass object class for which validator will be generated
      * @return validator
      * @param <T> object type
@@ -39,16 +43,12 @@ public class Validators {
      */
     public static <T> Validator<T> forClass(Class<T> targetClass) {
         checkNull(targetClass, "targetClass");
-        Validator<T> validator = (Validator<T>) validators.get(targetClass);
-        if (validator == null) {
-            throw new IllegalArgumentException("No validator registered for class "
-                    + targetClass.getCanonicalName());
-        }
-        return validator;
+        return loadValidator(targetClass);
     }
 
     /**
-     * Validate object
+     * Validate object.
+     * new Validator will be created for validator
      * @param target object which need validate
      * @param <T> object type
      * @throws NullPointerException if target is null
@@ -62,6 +62,7 @@ public class Validators {
 
     /**
      * Validate object using only specified fields
+     * new Validator will be created for validator
      * @param target object which need validate
      * @param includes list of fields which must be used for validation
      * @param <T> object type
@@ -76,6 +77,7 @@ public class Validators {
 
     /**
      * Validate object without specified fields
+     * new Validator will be created for validator
      * @param target object which need validate
      * @param excludes list of fields which must be excluded from validation
      * @param <T> object type

@@ -9,10 +9,11 @@ import validez.processor.generator.fields.FieldValidator;
 import validez.processor.generator.fields.external.ExternalAnnotationValidator;
 import validez.processor.generator.help.AnnotationAndValidator;
 
+import javax.annotation.Nullable;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import java.lang.annotation.Annotation;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 
 @Builder
@@ -23,7 +24,8 @@ public class SimpleField extends ValidField {
     private final VariableElement field;
     private final Map<Annotation, FieldValidator<Annotation>> fieldValidators;
     private final ExternalAnnotationValidator externalAnnotationValidator;
-    private final List<AnnotationAndValidator> externalValidators;
+    @Nullable
+    private final Collection<AnnotationAndValidator> externalValidators;
 
     @Override
     public CodeBlock createCode(ValidatorArgs args) {
@@ -39,10 +41,12 @@ public class SimpleField extends ValidField {
             CodeBlock validatorCode = validator.build(annotation, field, args);
             codeBlockBuilder.add(validatorCode);
         }
-        for (AnnotationAndValidator exValidator: externalValidators) {
-            CodeBlock validatorCode = externalAnnotationValidator
-                    .build(field, exValidator.getAnnotation(), exValidator.getExternalValidatorType(), args);
-            codeBlockBuilder.add(validatorCode);
+        if (externalValidators != null) {
+            for (AnnotationAndValidator exValidator : externalValidators) {
+                CodeBlock validatorCode = externalAnnotationValidator
+                        .build(field, exValidator);
+                codeBlockBuilder.add(validatorCode);
+            }
         }
         codeBlockBuilder.endControlFlow();
         codeBlockBuilder.addStatement("return null");

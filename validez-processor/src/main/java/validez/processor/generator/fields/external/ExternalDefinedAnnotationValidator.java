@@ -6,7 +6,7 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import lombok.RequiredArgsConstructor;
 import validez.lib.api.external.AnnotationProperties;
-import validez.processor.generator.ValidatorArgs;
+import validez.processor.generator.help.AnnotationAndValidator;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
@@ -29,17 +29,15 @@ public class ExternalDefinedAnnotationValidator implements ExternalAnnotationVal
     private final ProcessingEnvironment processingEnvironment;
 
     @Override
-    public CodeBlock build(VariableElement field, AnnotationMirror annotation,
-                           TypeMirror externalValidatorType, ValidatorArgs args) {
-        String validatorName = "$$$customValidator";
+    public CodeBlock build(VariableElement field, AnnotationAndValidator validatorMeta) {
         Name fieldName = field.getSimpleName();
         String propertiesName = CodeBlock.of("$$$NProperties", fieldName)
                 .toString();
+        AnnotationMirror annotation = validatorMeta.getAnnotation();
         ClassName annotationClass = (ClassName) ClassName.get(annotation.getAnnotationType());
         return CodeBlock.builder()
-                .addStatement("$T $N = new $T()", externalValidatorType, validatorName, externalValidatorType)
                 .add(parseAnnotationProperties(annotation, propertiesName))
-                .addStatement("boolean valid = $N.validate($N, $N)", validatorName, propertiesName, fieldName)
+                .addStatement("boolean valid = this.$N.validate($N, $N)", validatorMeta.memberName(), propertiesName, fieldName)
                 .beginControlFlow("if (!valid)")
                 .addStatement(returnValidatorContext(fieldName, null, annotationClass))
                 .endControlFlow()
