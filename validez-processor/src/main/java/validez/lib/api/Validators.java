@@ -29,7 +29,7 @@ public class Validators {
                  NoSuchMethodException | InstantiationException |
                  IllegalAccessException e) {
             throw new RuntimeException("Cannot load and create instance of " +
-                    " validator implementation for" + dtoClass.getName(), e);
+                    " validator implementation for " + dtoClass.getName(), e);
         }
     }
 
@@ -38,7 +38,7 @@ public class Validators {
      * @param targetClass object class for which validator will be generated
      * @return validator
      * @param <T> object type
-     * @throws IllegalArgumentException if no validator present for specified class
+     * @throws RuntimeException if where is not validator or validator loading error occurs
      * @throws NullPointerException if targetClass is null
      */
     public static <T> Validator<T> forClass(Class<T> targetClass) {
